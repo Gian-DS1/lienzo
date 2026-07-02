@@ -1,0 +1,44 @@
+{
+  "name": "lienzo",
+  "version": "1.0.0",
+  "description": "Canvas multi-agente: dirige Claude Code, Codex, Gemini y Copilot en paralelo con tu voz. App de escritorio para macOS, Windows y Linux.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "open": "node scripts/open.js",
+    "setup": "node scripts/install.js",
+    "postinstall": "node scripts/install.js || true"
+  },
+  "keywords": [
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "gemini",
+    "copilot",
+    "multi-agent",
+    "terminal",
+    "canvas",
+    "voice-control",
+    "xterm",
+    "node-pty",
+    "desktop-app",
+    "liquid-glass"
+  ],
+  "author": "Gian-DS1",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gian-DS1/lienzo.git"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "^1.2.0-beta.12",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "express": "^5.2.1",
+    "ws": "^8.21.0"
+  }
+}

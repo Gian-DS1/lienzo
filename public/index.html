@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LIENZO — comanda un ejército de agentes</title>
+  <link rel="stylesheet" href="/vendor/xterm/css/xterm.css" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body data-theme="midnight">
+  <div id="viewport">
+    <div id="canvas"></div>
+    <div id="empty-hint">
+      <span class="hint-mark">✦</span>
+      <h1>Tu lienzo está vacío</h1>
+      <p>Invoca agentes con los botones de arriba y dirígelos en paralelo.<br/>
+      Tú diriges, ellos construyen, tú publicas.</p>
+    </div>
+  </div>
+
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-mark">✦</span>
+      <span class="brand-name">LIENZO</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="spawn-buttons" class="spawn-buttons"></div>
+
+    <div class="divider"></div>
+
+    <form id="broadcast-form" class="broadcast" title="Enviar una orden a todos los agentes">
+      <input id="broadcast-input" type="text" placeholder="Ordena a todos los agentes…" autocomplete="off" />
+      <button type="submit">Enviar</button>
+    </form>
+
+    <button id="mic-btn" class="icon-btn" title="Control por voz — di: «Marshall, corre los tests»">🎙</button>
+
+    <button id="guide-btn" class="pill-btn" title="Guía: flujo óptimo y membresías">Guía</button>
+
+    <button id="help-btn" class="icon-btn" title="Tutorial interactivo">?</button>
+
+    <select id="theme-select" title="Apariencia">
+      <option value="midnight">Midnight</option>
+      <option value="carbon">Carbon</option>
+      <option value="paper">Paper</option>
+      <option value="synthwave">Synthwave</option>
+    </select>
+  </header>
+
+  <div id="zoom-controls">
+    <button id="zoom-out" title="Alejar">−</button>
+    <button id="zoom-reset" title="Restablecer zoom">100%</button>
+    <button id="zoom-in" title="Acercar">+</button>
+  </div>
+
+  <div id="siri-glow"></div>
+
+  <div id="voice-chip" class="hidden">
+    <span class="voice-waves"><span></span><span></span><span></span><span></span><span></span></span>
+    <span id="voice-text">Escuchando…</span>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+
+  <script src="/vendor/xterm/lib/xterm.js"></script>
+  <script src="/vendor/addon-fit/lib/addon-fit.js"></script>
+  <script src="/app.js"></script>
+  <script src="/tutorial.js"></script>
+  <script src="/guide.js"></script>
+</body>
+</html>

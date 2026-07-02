@@ -1,0 +1,13 @@
+# Dependencias
+node_modules/
+
+# Lanzadores generados por `npm run setup` (específicos de cada máquina)
+launchers/
+
+# Artefactos intermedios de iconos
+assets/icon.iconset/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
