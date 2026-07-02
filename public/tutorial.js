@@ -17,8 +17,15 @@
       title: 'Invoca a tus agentes',
       body: 'Cada botón lanza un agente real en su propia terminal: <b>Claude Code</b>, ' +
         '<b>Codex</b> (GPT), <b>Gemini</b>, <b>Copilot</b>… Los atenuados no están ' +
-        'instalados en tu Mac; instálalos y aparecerán solos. La primera vez, cada ' +
+        'instalados en tu equipo; instálalos y aparecerán solos. La primera vez, cada ' +
         'agente te pedirá iniciar sesión con tu propia cuenta dentro de su tarjeta.',
+    },
+    {
+      target: '.spawn-btn[data-type="ollama"]',
+      title: 'También modelos locales',
+      body: 'El botón <b>Ollama</b> (distintivo <span class="local-chip">local</span>) corre ' +
+        'modelos <b>en tu propia máquina</b>: gratis, privados y sin conexión. Al pulsarlo ' +
+        'eliges qué modelo ejecutar. ¿Cómo se instala? En <b>Guía → Local</b> lo explico paso a paso.',
     },
     {
       target: '.agent-card',

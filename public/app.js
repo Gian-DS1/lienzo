@@ -164,22 +164,121 @@ async function loadAgentDefs() {
     const btn = document.createElement('button');
     btn.className = 'spawn-btn';
     btn.disabled = !def.available;
-    btn.title = def.available ? `Invocar agente ${def.label}` : `${def.label} no está instalado en esta máquina`;
-    btn.innerHTML = `<span class="dot" style="background:${def.color};color:${def.color}"></span>${def.label}`;
+    if (def.available) {
+      btn.title = def.local
+        ? `Invocar modelo local ${def.label} (elige qué modelo ejecutar)`
+        : `Invocar agente ${def.label}`;
+    } else {
+      btn.title = def.local
+        ? `${def.label} no está instalado. Instálalo desde ollama.com y descarga un modelo.`
+        : `${def.label} no está instalado en esta máquina`;
+    }
+    const localMark = def.local ? '<span class="local-chip">local</span>' : '';
+    btn.dataset.type = def.type;
+    btn.innerHTML = `<span class="dot" style="background:${def.color};color:${def.color}"></span>${def.label}${localMark}`;
     btn.onclick = () => spawnAgent(def.type);
     bar.appendChild(btn);
   }
 }
 loadAgentDefs();
 
+// Modelos locales instalados para un tipo de agente (cacheado por tipo).
+const modelCache = new Map();
+async function fetchModels(type) {
+  if (modelCache.has(type)) return modelCache.get(type);
+  try {
+    const res = await fetch(`/api/models?type=${encodeURIComponent(type)}`);
+    const data = await res.json();
+    const models = Array.isArray(data.models) ? data.models : [];
+    modelCache.set(type, models);
+    return models;
+  } catch {
+    return [];
+  }
+}
+
 function nextName() {
   if (nameSeq < NAMES.length) return NAMES[nameSeq++];
   return `Agente ${++nameSeq - NAMES.length}`;
 }
 
-function spawnAgent(type) {
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// --- Selector de modelo local (Ollama) -------------------------------------
+let openPicker = null;
+function closeModelPicker() {
+  if (openPicker) { openPicker.remove(); openPicker = null; }
+  document.removeEventListener('pointerdown', onPickerOutside, true);
+}
+function onPickerOutside(e) {
+  if (openPicker && !openPicker.contains(e.target) && !e.target.closest(`.spawn-btn[data-type]`)) {
+    closeModelPicker();
+  }
+}
+
+async function openModelPicker(def) {
+  closeModelPicker();
+  const anchor = document.querySelector(`.spawn-btn[data-type="${def.type}"]`);
+  const pop = document.createElement('div');
+  pop.className = 'model-picker';
+  pop.innerHTML = `<div class="mp-head">Elige un modelo de ${def.label}</div>
+    <div class="mp-list"><div class="mp-loading">Cargando modelos…</div></div>
+    <form class="mp-custom">
+      <input type="text" placeholder="…u otro modelo (p. ej. llama3)" autocomplete="off" />
+      <button type="submit" title="Ejecutar este modelo">Ejecutar</button>
+    </form>`;
+  document.body.appendChild(pop);
+  openPicker = pop;
+
+  // Posicionar bajo el botón
+  const r = anchor ? anchor.getBoundingClientRect() : { left: 80, bottom: 56 };
+  pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - 268))}px`;
+  pop.style.top = `${r.bottom + 8}px`;
+
+  const list = pop.querySelector('.mp-list');
+  const input = pop.querySelector('.mp-custom input');
+  pop.querySelector('.mp-custom').onsubmit = (e) => {
+    e.preventDefault();
+    const m = input.value.trim();
+    if (!m) return;
+    closeModelPicker();
+    spawnAgent(def.type, { model: m });
+  };
+
+  document.addEventListener('pointerdown', onPickerOutside, true);
+  setTimeout(() => input.focus(), 30);
+
+  const models = await fetchModels(def.type);
+  if (!openPicker) return; // se cerró mientras cargaba
+  if (models.length === 0) {
+    list.innerHTML = `<div class="mp-empty">No hay modelos descargados.<br>
+      Ejecuta <code>ollama pull llama3</code> en una terminal y vuelve a intentarlo,
+      o escribe un nombre abajo.</div>`;
+    return;
+  }
+  list.innerHTML = '';
+  for (const m of models) {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'mp-item';
+    row.innerHTML = `<span class="mp-dot" style="background:${def.color}"></span>${escapeHtml(m)}`;
+    row.onclick = () => { closeModelPicker(); spawnAgent(def.type, { model: m }); };
+    list.appendChild(row);
+  }
+}
+
+function spawnAgent(type, opts = {}) {
   const def = agentDefs.find((d) => d.type === type);
   if (!def || !def.available) return toast(`Agente "${type}" no disponible.`);
+
+  // Modelos locales: primero preguntar qué modelo ejecutar.
+  if (def.needsModel && !opts.model) {
+    return openModelPicker(def);
+  }
+  const model = opts.model || null;
 
   const id = `a${++agentSeq}-${Date.now()}`;
   const name = nextName();
@@ -199,7 +298,7 @@ function spawnAgent(type) {
       <button class="traffic" title="Cerrar agente">✕</button>
       <span class="status"></span>
       <span class="name">${name}</span>
-      <span class="badge" style="background:${def.color}">${def.label}</span>
+      <span class="badge" style="background:${def.color}">${def.label}${model ? ` · ${escapeHtml(model)}` : ''}</span>
       <span class="cwd"></span>
     </div>
     <div class="agent-term"></div>
@@ -225,7 +324,7 @@ function spawnAgent(type) {
   term.onData((data) => wsSend({ type: 'input', id, data }));
 
   const agent = {
-    id, name, type, def, card, term, fit,
+    id, name, type, def, model, card, term, fit,
     status: 'idle',
     statusEl: card.querySelector('.status'),
     cwdEl: card.querySelector('.cwd'),
@@ -234,7 +333,7 @@ function spawnAgent(type) {
   agents.set(id, agent);
   emptyHint.classList.add('hidden');
 
-  wsSend({ type: 'spawn', id, agent: type, cols: term.cols, rows: term.rows, cwd: null });
+  wsSend({ type: 'spawn', id, agent: type, model, cols: term.cols, rows: term.rows, cwd: null });
 
   // Focus / raise
   card.addEventListener('pointerdown', () => {

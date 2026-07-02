@@ -84,6 +84,42 @@ function spawnSpec(bin, extraArgs) {
   return { file: bin, args: extraArgs };
 }
 
+// ---------------------------------------------------------------------------
+// Modelos locales (Ollama). Corre modelos en tu propia máquina, sin cuenta.
+// ---------------------------------------------------------------------------
+
+function ollamaBin() {
+  return which('ollama') || firstExisting([
+    '/usr/local/bin/ollama',
+    '/opt/homebrew/bin/ollama',
+    '/usr/bin/ollama',
+    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe'),
+    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Ollama', 'ollama.exe'),
+  ]);
+}
+
+// Lista los modelos ya descargados (`ollama list`), devolviendo sus nombres.
+function ollamaModels() {
+  const bin = ollamaBin();
+  if (!bin) return [];
+  try {
+    const out = execFileSync(bin, ['list'], { encoding: 'utf8', timeout: 5000 });
+    return out
+      .split(/\r?\n/)
+      .slice(1) // saltar la cabecera NAME/ID/SIZE…
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => l.split(/\s+/)[0]) // primera columna = NAME
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+// Nombre de modelo seguro (evita inyección de argumentos). Cubre etiquetas como
+// llama3:latest, qwen2.5-coder:7b, library/llama3, etc.
+const MODEL_RE = /^[\w./:-]{1,120}$/;
+
 const AGENT_DEFS = [
   {
     type: 'claude',
@@ -128,6 +164,17 @@ const AGENT_DEFS = [
     args: [],
   },
   {
+    type: 'ollama',
+    label: 'Ollama',
+    color: '#14B8A6',
+    local: true,       // corre en tu máquina, sin cuenta
+    needsModel: true,  // hay que elegir qué modelo ejecutar
+    resolve: () => ollamaBin(),
+    listModels: ollamaModels,
+    runArgs: (model) => ['run', model],
+    args: [],
+  },
+  {
     type: 'shell',
     label: IS_WIN ? 'PowerShell' : 'Shell',
     color: '#94A3B8',
@@ -142,7 +189,10 @@ const AGENT_DEFS = [
 function detectAgents() {
   return AGENT_DEFS.map((def) => {
     const bin = def.resolve();
-    return { type: def.type, label: def.label, color: def.color, available: !!bin, bin };
+    return {
+      type: def.type, label: def.label, color: def.color, available: !!bin, bin,
+      local: !!def.local, needsModel: !!def.needsModel,
+    };
   });
 }
 
@@ -157,6 +207,12 @@ app.use('/vendor/addon-fit', express.static(path.join(__dirname, 'node_modules',
 
 app.get('/api/agents', (_req, res) => {
   res.json({ agents: detectAgents().map(({ bin, ...rest }) => rest), home: HOME, cwd: process.cwd() });
+});
+
+// Modelos locales instalados para un agente (p. ej. ?type=ollama).
+app.get('/api/models', (req, res) => {
+  const def = AGENT_DEFS.find((d) => d.type === req.query.type && typeof d.listModels === 'function');
+  res.json({ models: def ? def.listModels() : [] });
 });
 
 const server = http.createServer(app);
@@ -201,9 +257,18 @@ wss.on('connection', (ws) => {
         send({ type: 'error', id: msg.id, message: `Agente "${msg.agent}" no disponible en esta máquina.` });
         return;
       }
+      let extraArgs = def.args;
+      if (def.needsModel) {
+        const model = typeof msg.model === 'string' ? msg.model.trim() : '';
+        if (!MODEL_RE.test(model)) {
+          send({ type: 'error', id: msg.id, message: 'Modelo local no válido o no indicado.' });
+          return;
+        }
+        extraArgs = def.runArgs(model);
+      }
       let cwd = msg.cwd && fs.existsSync(msg.cwd) ? msg.cwd : HOME;
       try {
-        const { file, args } = spawnSpec(bin, def.args);
+        const { file, args } = spawnSpec(bin, extraArgs);
         const proc = pty.spawn(file, args, {
           name: 'xterm-256color',
           cols: msg.cols || 80,

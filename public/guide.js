@@ -109,6 +109,37 @@
     },
   ];
 
+  const LOCAL_STEPS = [
+    {
+      icon: '①',
+      title: 'Instala Ollama',
+      body: 'Descárgalo de <code>ollama.com/download</code> (Windows, macOS y Linux). ' +
+        'Es gratis y corre los modelos <b>en tu propia máquina</b>: sin cuenta, sin ' +
+        'conexión y sin que tus datos salgan de tu equipo.',
+    },
+    {
+      icon: '②',
+      title: 'Descarga un modelo',
+      body: 'En una terminal: <code>ollama pull llama3</code>. Para programar van muy ' +
+        'bien <code>qwen2.5-coder</code>, <code>deepseek-coder-v2</code> o ' +
+        '<code>codellama</code>; ligeros y rápidos: <code>phi3</code>, <code>mistral</code>.',
+    },
+    {
+      icon: '③',
+      title: 'Ábrelo en LIENZO',
+      body: 'Pulsa el botón <b>Ollama</b> (lleva el distintivo <span class="local-chip">local</span>), ' +
+        'elige un modelo de la lista o escribe su nombre, y aparece como una tarjeta más. ' +
+        'Puedes correr varios modelos locales y en la nube a la vez en el mismo lienzo.',
+    },
+    {
+      icon: '④',
+      title: 'Elige según tu equipo',
+      body: 'Los modelos grandes necesitan más memoria: como regla, ~8&nbsp;GB de RAM para ' +
+        'modelos de 7B, ~16&nbsp;GB para 13B. Si va lento, prueba uno más pequeño o una ' +
+        'variante cuantizada (p. ej. <code>llama3:8b-instruct-q4_0</code>).',
+    },
+  ];
+
   // ------------------------------------------------------------------ DOM
   const scrim = el('div', 'guide-scrim hidden');
   const panel = el('aside', 'guide-panel hidden');
@@ -124,6 +155,7 @@
     <div class="guide-tabs" role="tablist">
       <button class="guide-tab on" data-tab="flow" role="tab">Flujo óptimo</button>
       <button class="guide-tab" data-tab="plans" role="tab">Membresías</button>
+      <button class="guide-tab" data-tab="local" role="tab">Local</button>
     </div>
     <div class="guide-body">
       <section class="guide-pane" data-pane="flow">
@@ -159,7 +191,23 @@
             </div>`).join('')}
         </div>
         <p class="guide-foot">¿Un botón sale atenuado? Ese CLI no está instalado. Cópiate su línea
-          <code>npm i -g …</code>, ejecútala en una terminal y reinicia LIENZO para activarlo.</p>
+          <code>npm i -g …</code>, ejecútala en una terminal y reinicia LIENZO para activarlo.
+          ¿Quieres modelos <b>gratis y sin cuenta</b>? Mira la pestaña <b>Local</b>.</p>
+      </section>
+
+      <section class="guide-pane hidden" data-pane="local">
+        <p class="guide-lead">Corre modelos <b>en tu propia máquina</b> con <b>Ollama</b>:
+          gratis, privado y sin conexión. Cuatro pasos.</p>
+        <ol class="guide-steps">
+          ${LOCAL_STEPS.map((s) => `
+            <li class="guide-step">
+              <span class="guide-step-icon">${s.icon}</span>
+              <div><h3>${s.title}</h3><p>${s.body}</p></div>
+            </li>`).join('')}
+        </ol>
+        <p class="guide-foot">El botón <b>Ollama</b> aparece activo en cuanto lo instalas.
+          Si no ves modelos en la lista, descarga uno con <code>ollama pull &lt;modelo&gt;</code>
+          y vuelve a abrir el selector.</p>
       </section>
     </div>`;
 
