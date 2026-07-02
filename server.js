@@ -3,7 +3,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { execFileSync } = require('child_process');
+const { execFileSync, execFile } = require('child_process');
 const { WebSocketServer } = require('ws');
 const pty = require('@lydell/node-pty');
 
@@ -99,21 +99,27 @@ function ollamaBin() {
 }
 
 // Lista los modelos ya descargados (`ollama list`), devolviendo sus nombres.
+// Asíncrono (no bloquea el event loop) y con caché de 3 s para que peticiones
+// repetidas no relancen el subproceso ni permitan saturar el servidor.
+let ollamaCache = { at: 0, models: [] };
 function ollamaModels() {
-  const bin = ollamaBin();
-  if (!bin) return [];
-  try {
-    const out = execFileSync(bin, ['list'], { encoding: 'utf8', timeout: 5000 });
-    return out
-      .split(/\r?\n/)
-      .slice(1) // saltar la cabecera NAME/ID/SIZE…
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => l.split(/\s+/)[0]) // primera columna = NAME
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
+  return new Promise((resolve) => {
+    if (Date.now() - ollamaCache.at < 3000) return resolve(ollamaCache.models);
+    const bin = ollamaBin();
+    if (!bin) return resolve([]);
+    execFile(bin, ['list'], { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
+      if (err) return resolve(ollamaCache.models); // devuelve lo último bueno (o [])
+      const models = stdout
+        .split(/\r?\n/)
+        .slice(1) // saltar la cabecera NAME/ID/SIZE…
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((l) => l.split(/\s+/)[0]) // primera columna = NAME
+        .filter(Boolean);
+      ollamaCache = { at: Date.now(), models };
+      resolve(models);
+    });
+  });
 }
 
 // Nombre de modelo seguro (evita inyección de argumentos). Cubre etiquetas como
@@ -210,9 +216,9 @@ app.get('/api/agents', (_req, res) => {
 });
 
 // Modelos locales instalados para un agente (p. ej. ?type=ollama).
-app.get('/api/models', (req, res) => {
+app.get('/api/models', async (req, res) => {
   const def = AGENT_DEFS.find((d) => d.type === req.query.type && typeof d.listModels === 'function');
-  res.json({ models: def ? def.listModels() : [] });
+  res.json({ models: def ? await def.listModels() : [] });
 });
 
 const server = http.createServer(app);

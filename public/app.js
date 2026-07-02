@@ -182,16 +182,14 @@ async function loadAgentDefs() {
 }
 loadAgentDefs();
 
-// Modelos locales instalados para un tipo de agente (cacheado por tipo).
-const modelCache = new Map();
+// Modelos locales instalados para un tipo de agente. Se consulta cada vez que se
+// abre el selector (el servidor cachea 3 s) para que un modelo recién descargado
+// con `ollama pull` aparezca sin recargar la página.
 async function fetchModels(type) {
-  if (modelCache.has(type)) return modelCache.get(type);
   try {
     const res = await fetch(`/api/models?type=${encodeURIComponent(type)}`);
     const data = await res.json();
-    const models = Array.isArray(data.models) ? data.models : [];
-    modelCache.set(type, models);
-    return models;
+    return Array.isArray(data.models) ? data.models : [];
   } catch {
     return [];
   }
@@ -214,7 +212,9 @@ function closeModelPicker() {
   document.removeEventListener('pointerdown', onPickerOutside, true);
 }
 function onPickerOutside(e) {
-  if (openPicker && !openPicker.contains(e.target) && !e.target.closest(`.spawn-btn[data-type]`)) {
+  // Cerrar ante cualquier clic fuera del picker (incluidos otros botones de
+  // spawn). Reabrir el mismo botón vuelve a mostrarlo vía openModelPicker.
+  if (openPicker && !openPicker.contains(e.target)) {
     closeModelPicker();
   }
 }
