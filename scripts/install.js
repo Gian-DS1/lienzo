@@ -79,11 +79,13 @@ function installWindows() {
   const launchers = path.join(ROOT, 'launchers');
   fs.mkdirSync(launchers, { recursive: true });
   const vbs = path.join(launchers, 'LIENZO.vbs');
-  // Run con estilo 0 = ventana oculta (sin consola parpadeando)
-  fs.writeFileSync(vbs, `' LIENZO — lanzador oculto
+  // En VBScript la barra invertida NO se escapa (es literal); solo las comillas
+  // dobles se escapan duplicándolas. Estilo de ventana 0 = oculta (sin consola).
+  const vbsStr = (s) => s.replace(/"/g, '""');
+  fs.writeFileSync(vbs, `' LIENZO - lanzador oculto
 Set sh = CreateObject("WScript.Shell")
-sh.CurrentDirectory = "${ROOT.replace(/\\/g, '\\\\')}"
-sh.Run """${NODE.replace(/\\/g, '\\\\')}"" ""${OPEN.replace(/\\/g, '\\\\')}""", 0, False
+sh.CurrentDirectory = "${vbsStr(ROOT)}"
+sh.Run """${vbsStr(NODE)}"" ""${vbsStr(OPEN)}""", 0, False
 `);
 
   const ico = path.join(ASSETS, 'icon.ico');
@@ -92,14 +94,17 @@ sh.Run """${NODE.replace(/\\/g, '\\\\')}"" ""${OPEN.replace(/\\/g, '\\\\')}""", 
   const startMenu = path.join(process.env.APPDATA || path.join(HOME, 'AppData', 'Roaming'),
     'Microsoft', 'Windows', 'Start Menu', 'Programs');
 
+  // En cadenas PowerShell entre comillas simples, la barra invertida es literal;
+  // solo hay que duplicar las comillas simples.
+  const ps1 = (s) => s.replace(/'/g, "''");
   const mkShortcut = (dir) => {
     fs.mkdirSync(dir, { recursive: true });
     const lnk = path.join(dir, 'LIENZO.lnk');
-    const ps = `$s = (New-Object -ComObject WScript.Shell).CreateShortcut('${lnk}')
-$s.TargetPath = '${vbs}'
-$s.WorkingDirectory = '${ROOT}'
-$s.IconLocation = '${iconArg}'
-$s.Description = 'LIENZO — comanda un ejército de agentes de IA'
+    const ps = `$s = (New-Object -ComObject WScript.Shell).CreateShortcut('${ps1(lnk)}')
+$s.TargetPath = '${ps1(vbs)}'
+$s.WorkingDirectory = '${ps1(ROOT)}'
+$s.IconLocation = '${ps1(iconArg)}'
+$s.Description = 'LIENZO - comanda un ejercito de agentes de IA'
 $s.Save()`;
     execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps]);
     return lnk;
