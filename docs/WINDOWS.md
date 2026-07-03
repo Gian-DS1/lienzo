@@ -102,17 +102,23 @@ PowerShell.**
 
    Verás muchas líneas de texto durante 1–2 minutos. Es normal. Al terminar,
    LIENZO **crea automáticamente** un acceso directo llamado **LIENZO** en tu
-   **Escritorio** y en el **menú Inicio**. Verás al final algo como:
+   **Escritorio** y en el **menú Inicio**, y descarga el pequeño componente que
+   le da su **ventana propia** (el SDK de WebView2, ~5 MB). Verás al final algo
+   como:
 
    ```
    ✓ Acceso directo en el Escritorio
    ✓ Acceso directo en el menú Inicio
+   ✓ SDK WebView2 listo en C:\Users\TU-USUARIO\lienzo\webview2
    ```
 
    > ¿No aparecieron los accesos directos? Ejecuta manualmente:
    > ```powershell
    > npm run setup
    > ```
+   > 💡 Si en vez del ✓ del SDK WebView2 ves un `·` de aviso (por ejemplo, sin
+   > internet en ese momento), no pasa nada: LIENZO lo descargará solo la próxima
+   > vez que lo abras, y mientras tanto usará Edge. No tienes que hacer nada.
 
 Ya está instalado. No necesitas volver a tocar PowerShell para usarlo.
 
@@ -130,9 +136,16 @@ Ya está instalado. No necesitas volver a tocar PowerShell para usarlo.
 - Detrás, LIENZO arranca su pequeño servidor local automáticamente. No verás
   ninguna ventana negra de consola: es silencioso.
 
-> **Nota:** el control por **voz** 🎙 no está disponible en la ventana nativa.
-> Si quieres usarlo, crea el archivo `%USERPROFILE%\.lienzo.env` con la línea
-> `LIENZO_WINDOW=chrome` y LIENZO abrirá con Chrome/Edge en modo app.
+> **Nota:** el control por **voz** 🎙 no está disponible en la ventana nativa
+> (es una limitación de WebView2). Si quieres usarlo, haz que LIENZO abra con
+> Chrome/Edge en modo app. En **PowerShell**:
+>
+> ```powershell
+> Add-Content -Path "$HOME\.lienzo.env" -Value 'LIENZO_WINDOW=chrome'
+> ```
+>
+> y vuelve a abrir LIENZO. (Valores posibles: `native` —por defecto—, `chrome` o
+> `browser` para el navegador por defecto.)
 
 > **Aviso de SmartScreen / Firewall:** la primera vez, Windows puede preguntar si
 > permites la app o mostrar «Windows protegió tu PC». Pulsa **«Más información» →
@@ -161,6 +174,36 @@ clic en el acceso directo): el botón del agente aparecerá activo.
 Para saber **qué verás al iniciar sesión en cada uno** (pantallas, código de
 dispositivo, qué plan necesitas), abre LIENZO y pulsa **Guía → Membresías**: hay
 un paso a paso detallado de cada proveedor.
+
+### Claves de API (y el caso de Gemini)
+
+Algunos agentes usan una **clave de API** en vez de (o además de) iniciar sesión
+en el navegador. En LIENZO se ponen en un archivo llamado **`.lienzo.env`** dentro
+de tu carpeta de usuario; LIENZO se las pasa a todos los agentes al arrancar.
+
+> ⚠️ **Gemini, importante (julio 2026):** Google **retiró el inicio de sesión con
+> cuenta individual** en Gemini CLI. Si eliges «Sign in with Google» verás el error
+> *«This client is no longer supported…»*. La vía que **sí funciona** es una clave
+> de API gratuita:
+>
+> 1. Entra en **<https://aistudio.google.com/apikey>** con tu cuenta de Google y
+>    pulsa **«Create API key»**. Copia la clave.
+> 2. Abre **PowerShell** y crea el archivo con tu clave (pega la tuya entre las
+>    comillas):
+>
+>    ```powershell
+>    Add-Content -Path "$HOME\.lienzo.env" -Value 'GEMINI_API_KEY=pega_tu_clave_aqui'
+>    ```
+>
+>    > Se hace por PowerShell porque el Explorador de Windows no deja crear con
+>    > facilidad archivos que empiezan por punto (`Add-Content` crea el archivo si
+>    > no existe). Para **ver o editar** el archivo luego, o cambiar la clave:
+>    > `notepad "$HOME\.lienzo.env"`.
+> 3. **Cierra y vuelve a abrir LIENZO.** En la tarjeta de Gemini elige la opción
+>    **«2. Use Gemini API Key»** y pulsa Enter. Listo.
+
+El mismo archivo `.lienzo.env` admite otras variables (una por línea, formato
+`CLAVE=valor`) para cualquier agente que necesite una.
 
 ---
 
@@ -207,6 +250,26 @@ tareas) o quedó un proceso previo; ciérralo, o arranca en otro puerto:
 ```powershell
 $env:PORT=3001; npm start
 ```
+
+**La ventana de LIENZO no aparece (o parpadea y se cierra)**
+LIENZO abre su ventana propia con WebView2. Si tu Windows no lo tuviera, debería
+caer solo a Edge; si aun así no ves nada, fuerza el modo navegador y vuelve a abrir:
+
+```powershell
+Add-Content -Path "$HOME\.lienzo.env" -Value 'LIENZO_WINDOW=chrome'
+```
+
+Para volver a la ventana nativa luego, borra esa línea del archivo
+(`notepad "$HOME\.lienzo.env"`). Si quieres reinstalar el componente de la ventana
+(el SDK de WebView2), ejecuta:
+
+```powershell
+node scripts\fetch-webview2.js
+```
+
+Casi todos los Windows 10/11 traen WebView2 de fábrica; si el tuyo no, se instala
+gratis desde el «Evergreen Runtime» de Microsoft (busca «WebView2 Runtime» en
+<https://developer.microsoft.com/microsoft-edge/webview2/>).
 
 **Un agente muere con un error nada más abrirse**
 Asegúrate de haberlo instalado (sección 5) y de haber **reiniciado LIENZO** después.
