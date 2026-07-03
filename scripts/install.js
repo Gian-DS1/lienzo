@@ -136,10 +136,18 @@ Categories=Development;Utility;
   log('  Búscalo como «LIENZO» en tu menú de aplicaciones.');
 }
 
-log('Instalando el acceso directo de LIENZO…');
-log(`  Repo: ${ROOT}`);
-log(`  Node: ${NODE}`);
-if (process.platform === 'win32') installWindows();
-else if (process.platform === 'darwin') installMac();
-else installLinux();
-log('Listo. Abre LIENZO como cualquier otra app.');
+// Nunca fallar: este script corre como `postinstall`, así que un error creando el
+// acceso directo no debe romper `npm install`. Se avisa y se termina con éxito.
+try {
+  log('Instalando el acceso directo de LIENZO…');
+  log(`  Repo: ${ROOT}`);
+  log(`  Node: ${NODE}`);
+  if (process.platform === 'win32') installWindows();
+  else if (process.platform === 'darwin') installMac();
+  else installLinux();
+  log('Listo. Abre LIENZO como cualquier otra app.');
+} catch (e) {
+  log('· No se pudo crear el acceso directo automáticamente: ' + (e && e.message));
+  log('  Puedes reintentarlo luego con:  npm run setup');
+}
+process.exit(0);

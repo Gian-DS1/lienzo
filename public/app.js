@@ -41,7 +41,8 @@ function wsSend(msg) {
 }
 
 function connect() {
-  ws = new WebSocket(`ws://${location.host}/ws`);
+  const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${wsProto}://${location.host}/ws`);
   ws.onopen = () => {
     wsReady = true;
     while (pendingSends.length) ws.send(JSON.stringify(pendingSends.shift()));
@@ -54,7 +55,7 @@ function connect() {
       agent.term.write(msg.data);
       markWorking(agent);
     } else if (msg.type === 'spawned') {
-      agent.cwdEl.textContent = msg.cwd.replace(/^\/Users\/[^/]+/, '~');
+      agent.cwdEl.textContent = shortenPath(msg.cwd);
       agent.cwdEl.title = msg.cwd;
     } else if (msg.type === 'exit') {
       agent.term.write(`\r\n\x1b[31m✖ proceso terminado (código ${msg.code})\x1b[0m\r\n`);
@@ -153,11 +154,23 @@ document.getElementById('zoom-reset').onclick = () => glideView(0, 0, 1);
 // ---------------------------------------------------------------------------
 
 let agentDefs = [];
+let agentHome = ''; // ruta del home del servidor, para acortar cwd a «~»
+
+// Acorta la ruta del directorio de trabajo mostrando «~» por el home, en
+// cualquier sistema (macOS, Windows con «\», Linux).
+function shortenPath(p) {
+  if (!p) return '';
+  if (agentHome && (p === agentHome || p.startsWith(agentHome + '/') || p.startsWith(agentHome + '\\'))) {
+    return '~' + p.slice(agentHome.length);
+  }
+  return p;
+}
 
 async function loadAgentDefs() {
   const res = await fetch('/api/agents');
   const data = await res.json();
   agentDefs = data.agents;
+  if (data.home) agentHome = data.home;
   const bar = document.getElementById('spawn-buttons');
   bar.innerHTML = '';
   for (const def of agentDefs) {

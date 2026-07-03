@@ -11,11 +11,12 @@ const path = require('path');
 const http = require('http');
 const net = require('net');
 const fs = require('fs');
+const os = require('os');
 const { spawn, execFile } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const PORT = process.env.PORT || 3000;
-const URL = `http://localhost:${PORT}/`;
+const APP_URL = `http://localhost:${PORT}/`;
 const IS_WIN = process.platform === 'win32';
 const IS_MAC = process.platform === 'darwin';
 
@@ -52,10 +53,16 @@ function sleep(ms) {
 }
 
 function startServer() {
+  // Redirigir la salida del servidor a un log en la carpeta temporal, para poder
+  // diagnosticar si algo falla. Si no se puede abrir, se descarta la salida.
+  let out = 'ignore';
+  try {
+    out = fs.openSync(path.join(os.tmpdir(), 'lienzo.log'), 'a');
+  } catch { /* sin log */ }
   const child = spawn(process.execPath, [path.join(ROOT, 'server.js')], {
     cwd: ROOT,
     detached: true,
-    stdio: 'ignore',
+    stdio: ['ignore', out, out],
     windowsHide: true,
     env: process.env,
   });
@@ -86,10 +93,10 @@ function openWindows() {
   ]);
   const app = chrome || edge;
   if (app) {
-    spawn(app, [`--app=${URL}`, '--new-window'], { detached: true, stdio: 'ignore' }).unref();
+    spawn(app, [`--app=${APP_URL}`, '--new-window'], { detached: true, stdio: 'ignore' }).unref();
   } else {
     // Navegador por defecto
-    spawn('cmd', ['/c', 'start', '""', URL], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    spawn('cmd', ['/c', 'start', '""', APP_URL], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
   }
 }
 
@@ -99,9 +106,9 @@ function openMac() {
     try { return fs.statSync(`/Applications/${b}.app`).isDirectory(); } catch { return false; }
   });
   if (found) {
-    spawn('open', ['-na', found, '--args', `--app=${URL}`], { detached: true, stdio: 'ignore' }).unref();
+    spawn('open', ['-na', found, '--args', `--app=${APP_URL}`], { detached: true, stdio: 'ignore' }).unref();
   } else {
-    execFile('open', [URL]);
+    execFile('open', [APP_URL]);
   }
 }
 
@@ -115,9 +122,9 @@ function openLinux() {
   };
   const app = candidates.map(which).find(Boolean);
   if (app) {
-    spawn(app, [`--app=${URL}`], { detached: true, stdio: 'ignore' }).unref();
+    spawn(app, [`--app=${APP_URL}`], { detached: true, stdio: 'ignore' }).unref();
   } else {
-    spawn('xdg-open', [URL], { detached: true, stdio: 'ignore' }).unref();
+    spawn('xdg-open', [APP_URL], { detached: true, stdio: 'ignore' }).unref();
   }
 }
 
@@ -133,7 +140,7 @@ function openBrowser() {
   }
   // Esperar a que el servidor responda (hasta ~15 s)
   for (let i = 0; i < 60; i++) {
-    if (await httpOk(URL)) break;
+    if (await httpOk(APP_URL)) break;
     await sleep(250);
   }
   openBrowser();

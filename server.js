@@ -62,7 +62,11 @@ function npmCli(name) {
   const candidates = [];
   if (IS_WIN) {
     const exts = ['.cmd', '.exe', '.bat', ''];
-    const dirs = [nodeDir, path.join(process.env.APPDATA || '', 'npm')];
+    // %APPDATA%\npm es el prefijo global por defecto de npm (sin espacios en la
+    // ruta); se prueba antes que la carpeta de node (que puede ser Program Files).
+    const dirs = [];
+    if (process.env.APPDATA) dirs.push(path.join(process.env.APPDATA, 'npm'));
+    dirs.push(nodeDir);
     for (const d of dirs) for (const e of exts) candidates.push(path.join(d, name + e));
   } else {
     candidates.push(
@@ -89,7 +93,9 @@ function spawnSpec(bin, extraArgs) {
 // (codex, gemini, copilot…) son scripts con shebang `#!/usr/bin/env node` y mueren
 // con «env: node: No such file or directory» (código 127). Anteponemos el directorio
 // del node que ejecuta este servidor (y rutas comunes) al PATH heredado.
+let cachedAgentPath = null;
 function agentPath() {
+  if (cachedAgentPath !== null) return cachedAgentPath;
   const parts = [path.dirname(process.execPath)];
   if (IS_WIN) {
     if (process.env.APPDATA) parts.push(path.join(process.env.APPDATA, 'npm'));
@@ -98,7 +104,8 @@ function agentPath() {
   }
   const current = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
   for (const p of current) if (!parts.includes(p)) parts.push(p);
-  return parts.join(path.delimiter);
+  cachedAgentPath = parts.join(path.delimiter);
+  return cachedAgentPath;
 }
 
 // Entorno de los agentes con el PATH reforzado. En Windows la clave puede ser
@@ -115,13 +122,15 @@ function agentEnv() {
 // ---------------------------------------------------------------------------
 
 function ollamaBin() {
-  return which('ollama') || firstExisting([
-    '/usr/local/bin/ollama',
-    '/opt/homebrew/bin/ollama',
-    '/usr/bin/ollama',
-    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe'),
-    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Ollama', 'ollama.exe'),
-  ]);
+  const candidates = IS_WIN
+    ? [
+        path.join(process.env.LOCALAPPDATA || 'C:\\', 'Programs', 'Ollama', 'ollama.exe'),
+        path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Ollama', 'ollama.exe'),
+      ]
+    : ['/usr/local/bin/ollama', '/opt/homebrew/bin/ollama', '/usr/bin/ollama'];
+  // Rutas de instalación estándar primero (statSync, sin subproceso); si no,
+  // se busca en el PATH con which/where.
+  return firstExisting(candidates) || which('ollama');
 }
 
 // Lista los modelos ya descargados (`ollama list`), devolviendo sus nombres.
@@ -218,14 +227,21 @@ const AGENT_DEFS = [
   },
 ];
 
+// La detección puede lanzar subprocesos (which/where), así que se cachea unos
+// segundos: reduce el coste en recargas rápidas y evita que peticiones repetidas
+// a /api/agents saturen la máquina, sin dejar de reflejar un CLI recién instalado.
+let agentsCache = { at: 0, list: null };
 function detectAgents() {
-  return AGENT_DEFS.map((def) => {
+  if (agentsCache.list && Date.now() - agentsCache.at < 4000) return agentsCache.list;
+  const list = AGENT_DEFS.map((def) => {
     const bin = def.resolve();
     return {
       type: def.type, label: def.label, color: def.color, available: !!bin, bin,
       local: !!def.local, needsModel: !!def.needsModel,
     };
   });
+  agentsCache = { at: Date.now(), list };
+  return list;
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +252,12 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/vendor/xterm', express.static(path.join(__dirname, 'node_modules', '@xterm', 'xterm')));
 app.use('/vendor/addon-fit', express.static(path.join(__dirname, 'node_modules', '@xterm', 'addon-fit')));
+
+app.get('/favicon.ico', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'assets', 'icon.ico'), (err) => {
+    if (err && !res.headersSent) res.status(404).end();
+  });
+});
 
 app.get('/api/agents', (_req, res) => {
   res.json({ agents: detectAgents().map(({ bin, ...rest }) => rest), home: HOME, cwd: process.cwd() });
@@ -341,6 +363,16 @@ wss.on('connection', (ws) => {
     }
     terms.clear();
   });
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`El puerto ${PORT} ya está en uso. ¿LIENZO ya está abierto? ` +
+      `Ciérralo, o arranca con otro puerto:  PORT=3001 npm start`);
+  } else {
+    console.error('Error del servidor:', err.message);
+  }
+  process.exit(1);
 });
 
 server.listen(PORT, HOST, () => {

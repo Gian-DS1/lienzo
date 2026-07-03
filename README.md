@@ -11,6 +11,13 @@ Funciona en **macOS, Windows y Linux**. Solo necesitas [Node.js 18+](https://nod
 
 ## Instalación
 
+> 🪟 **¿Windows?** Sigue la **[guía paso a paso para Windows »](docs/WINDOWS.md)**
+> — de cero, sin saber programar, explicando qué app abrir y qué comando escribir
+> en cada paso.
+
+Con [Node.js 18+](https://nodejs.org) instalado, en una terminal (macOS/Linux) o en
+**PowerShell** (Windows):
+
 ```bash
 git clone https://github.com/Gian-DS1/lienzo.git
 cd lienzo
@@ -34,6 +41,10 @@ Si prefieres la terminal: `npm start` y abre <http://localhost:3000>.
 > **Node.js** es el único requisito. `@lydell/node-pty` incluye binarios
 > precompilados para Windows (x64/ARM), macOS y Linux, así que **no hace falta
 > compilar nada** ni tener herramientas de build.
+>
+> 💡 Clona el proyecto en una **carpeta local normal** (p. ej. `C:\Users\tú\lienzo`
+> o `~/Proyectos`), **no** dentro de OneDrive/iCloud: los sincronizadores pueden
+> bloquear archivos y dar errores de acceso.
 
 ## Diseño
 
