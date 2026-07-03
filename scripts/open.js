@@ -77,6 +77,20 @@ function launchDetached(cmd, args, opts = {}) {
   child.unref();
 }
 
+// Variables de ~/.lienzo.env (las mismas que ven los agentes). Aquí solo se
+// usa LIENZO_WINDOW, para elegir cómo abrir la ventana sin tocar comandos.
+function userEnvVars() {
+  const env = {};
+  try {
+    const text = fs.readFileSync(path.join(os.homedir(), '.lienzo.env'), 'utf8');
+    for (const line of text.split(/\r?\n/)) {
+      const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+      if (m) env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+    }
+  } catch { /* sin fichero */ }
+  return env;
+}
+
 function firstFile(paths) {
   for (const p of paths) {
     try {
@@ -108,9 +122,11 @@ function openWindows() {
   }
 }
 
-function openMac() {
+// Cadena clásica: modo --app de Chrome/Brave/Edge si están, o el navegador
+// por defecto. Es el plan B de la ventana nativa y el modo LIENZO_WINDOW=chrome.
+function openMacBrowsers(allowApp) {
   const browsers = ['Google Chrome', 'Brave Browser', 'Microsoft Edge'];
-  const found = browsers.find((b) => {
+  const found = allowApp && browsers.find((b) => {
     try { return fs.statSync(`/Applications/${b}.app`).isDirectory(); } catch { return false; }
   });
   if (found) {
@@ -118,6 +134,31 @@ function openMac() {
   } else {
     execFile('open', [APP_URL], () => { /* mejor esfuerzo */ });
   }
+}
+
+// Ventana nativa (WKWebView vía osascript): funciona en cualquier Mac sin
+// instalar nada. Si osascript muriera al arrancar (macOS gestionado/bloqueado),
+// se cae a los navegadores. Nota: el control por voz solo existe en Chrome.
+function openMac() {
+  const mode = process.env.LIENZO_WINDOW || userEnvVars().LIENZO_WINDOW || 'native';
+  if (mode === 'chrome') return openMacBrowsers(true);
+  if (mode === 'browser') return openMacBrowsers(false);
+  return new Promise((resolve) => {
+    const icon = path.join(ROOT, 'assets', 'icon-1024.png');
+    const child = spawn('osascript', ['-l', 'JavaScript',
+      path.join(ROOT, 'scripts', 'webview-mac.js'), APP_URL,
+      fs.existsSync(icon) ? icon : ''], { detached: true, stdio: 'ignore' });
+    let settled = false;
+    const settle = (fallback) => {
+      if (settled) return;
+      settled = true;
+      if (fallback) openMacBrowsers(true); else child.unref();
+      resolve();
+    };
+    child.on('error', () => settle(true));
+    child.on('exit', (code) => settle(code !== 0));
+    setTimeout(() => settle(false), 1500);
+  });
 }
 
 function openLinux() {
@@ -151,7 +192,7 @@ function openBrowser() {
     if (await httpOk(APP_URL)) break;
     await sleep(250);
   }
-  openBrowser();
+  await openBrowser();
   // Dar un instante a que el navegador tome el proceso antes de salir
   await sleep(400);
 })();
