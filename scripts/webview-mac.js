@@ -1,19 +1,26 @@
 #!/usr/bin/env osascript -l JavaScript
 /*
- * LIENZO — ventana nativa de macOS.
- * Muestra la app en una ventana WKWebView (el WebKit que trae el sistema):
- * no necesita Chrome ni ningún otro navegador, y no es un binario que haya
- * que compilar o instalar — lo ejecuta `osascript`, incluido en macOS.
+ * LIENZO — ventana nativa de macOS (WKWebView del sistema, sin navegador).
+ * Se compila a una app real con `osacompile` (scripts/build-mac-app.js) para
+ * que la barra de menús y el Dock muestren «LIENZO» y no «osascript». El applet
+ * recibe la URL y el icono por variables de entorno (osacompile no pasa argv);
+ * se mantiene el fallback a argv para ejecutarlo suelto con `osascript` en dev.
  *
- *   osascript -l JavaScript scripts/webview-mac.js <url> [icono.png]
+ *   LIENZO_URL=… LIENZO_ICON=… mac-app/LIENZO.app/Contents/MacOS/applet
+ *   osascript -l JavaScript scripts/webview-mac.js <url> [icono.png]   (dev)
  */
 'use strict';
 ObjC.import('Cocoa');
 ObjC.import('WebKit');
 
+function env(name) {
+  const v = $.NSProcessInfo.processInfo.environment.objectForKey(name);
+  return v && !v.isNil() ? v.js : '';
+}
+
 function run(argv) {
-  const url = String((argv && argv[0]) || 'http://localhost:3000/');
-  const iconPath = argv && argv[1] ? String(argv[1]) : '';
+  const url = env('LIENZO_URL') || String((argv && argv[0]) || 'http://localhost:3000/');
+  const iconPath = env('LIENZO_ICON') || (argv && argv[1] ? String(argv[1]) : '');
 
   const app = $.NSApplication.sharedApplication;
   app.setActivationPolicy(0); // 0 = NSApplicationActivationPolicyRegular (Dock + foco)
@@ -51,7 +58,7 @@ function run(argv) {
   mainMenu.addItem(editItem);
   app.setMainMenu(mainMenu);
 
-  // El proceso es «osascript», pero el icono del Dock sí es personalizable.
+  // Icono propio en el Dock (además del nombre ya renombrado a «LIENZO»).
   if (iconPath) {
     const img = $.NSImage.alloc.initWithContentsOfFile(iconPath);
     if (img && !img.isNil()) app.applicationIconImage = img;

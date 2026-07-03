@@ -75,6 +75,14 @@ exec "$NODE" ${shq(OPEN)}
   try { execFileSync('touch', [appDir]); } catch { /* opcional */ }
   log(`✓ App creada: ${appDir}`);
   log('  Ábrela desde Launchpad/Spotlight o arrástrala al Dock.');
+
+  // Compilar la app de la ventana nativa (osacompile) para que la barra de menús
+  // muestre «LIENZO». Mejor esfuerzo: si falla, el lanzador la reintenta o usa
+  // la ventana de osascript.
+  try {
+    require('./build-mac-app').buildMacApp(true);
+    log('✓ Ventana nativa lista (osacompile)');
+  } catch { log('· No se pudo compilar la ventana nativa; se hará al abrir LIENZO.'); }
 }
 
 // ------------------------------------------------------------------- Windows

@@ -14,6 +14,8 @@ const fs = require('fs');
 const os = require('os');
 const { spawn, execFile } = require('child_process');
 
+const { buildMacApp } = require('./build-mac-app');
+
 const ROOT = path.resolve(__dirname, '..');
 const PORT = process.env.PORT || 3000;
 const APP_URL = `http://localhost:${PORT}/`;
@@ -176,18 +178,25 @@ function openMacBrowsers(allowApp) {
   }
 }
 
-// Ventana nativa (WKWebView vía osascript): funciona en cualquier Mac sin
-// instalar nada. Si osascript muriera al arrancar (macOS gestionado/bloqueado),
+// Ventana nativa de macOS: app real compilada con osacompile (barra de menús y
+// Dock muestran «LIENZO»). La URL y el icono se pasan por entorno. Si osacompile
+// no está o falla, se usa la ventana de osascript; y si esa muriera al arrancar,
 // se cae a los navegadores. Nota: el control por voz solo existe en Chrome.
 function openMac() {
   const mode = process.env.LIENZO_WINDOW || userEnvVars().LIENZO_WINDOW || 'native';
   if (mode === 'chrome') return openMacBrowsers(true);
   if (mode === 'browser') return openMacBrowsers(false);
+
+  const icon = path.join(ROOT, 'assets', 'icon-1024.png');
+  const childEnv = { ...process.env, LIENZO_URL: APP_URL };
+  if (fs.existsSync(icon)) childEnv.LIENZO_ICON = icon;
+
+  const exec = buildMacApp(false); // construye la .app si falta o cambió el script
   return new Promise((resolve) => {
-    const icon = path.join(ROOT, 'assets', 'icon-1024.png');
-    const child = spawn('osascript', ['-l', 'JavaScript',
-      path.join(ROOT, 'scripts', 'webview-mac.js'), APP_URL,
-      fs.existsSync(icon) ? icon : ''], { detached: true, stdio: 'ignore' });
+    const child = exec
+      ? spawn(exec, [], { detached: true, stdio: 'ignore', env: childEnv })
+      : spawn('osascript', ['-l', 'JavaScript', path.join(ROOT, 'scripts', 'webview-mac.js')],
+          { detached: true, stdio: 'ignore', env: childEnv });
     let settled = false;
     const settle = (fallback) => {
       if (settled) return;
@@ -197,7 +206,7 @@ function openMac() {
     };
     child.on('error', () => settle(true));
     child.on('exit', (code) => settle(code !== 0));
-    setTimeout(() => settle(false), 1500);
+    setTimeout(() => settle(false), 2000);
   });
 }
 

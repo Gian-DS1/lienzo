@@ -37,8 +37,9 @@ Al abrirlo, LIENZO arranca su servidor local (si no está ya corriendo) y se abr
 como un **programa con ventana propia, sin usar ningún navegador** y sin instalar
 ejecutables:
 
-- **macOS** — ventana **nativa** con el WebKit del sistema (un script de
-  `osascript` que macOS trae de serie).
+- **macOS** — ventana **nativa** con el WebKit del sistema. El setup la compila
+  con `osacompile` (herramienta incluida en macOS, sin código nativo) a una `.app`
+  propia, así la barra de menús y el Dock muestran **LIENZO**.
 - **Windows** — ventana **nativa** WinForms con **WebView2** (el runtime de
   Microsoft preinstalado en Windows 11 y casi todo Windows 10), creada por
   PowerShell; las DLLs oficiales del SDK las descarga el setup a `webview2/`
@@ -143,8 +144,9 @@ server.js           Express + WebSocket. Detección de CLIs multiplataforma y
                     spawn / input / resize / kill.
 scripts/open.js     Lanzador: arranca el servidor y abre la ventana de la app
                     (Windows / macOS / Linux, sin dependencias).
-scripts/webview-mac.js  Ventana nativa de macOS: WKWebView del sistema vía
-                    osascript (JXA) — sin navegador y sin binarios que compilar.
+scripts/webview-mac.js  Ventana nativa de macOS: WKWebView del sistema (JXA).
+scripts/build-mac-app.js  Compila la ventana anterior a una .app con osacompile
+                    (barra de menús y Dock = «LIENZO»); la llama npm run setup.
 scripts/webview-win.ps1 Ventana nativa de Windows: WinForms + WebView2 vía
                     PowerShell — sin navegador y sin binarios que compilar.
 scripts/fetch-webview2.js  Descarga las DLLs oficiales del SDK de WebView2

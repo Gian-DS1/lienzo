@@ -7,6 +7,9 @@ launchers/
 # SDK de WebView2 descargado por scripts/fetch-webview2.js (ventana de Windows)
 webview2/
 
+# App de la ventana nativa compilada por scripts/build-mac-app.js (macOS)
+mac-app/
+
 # Artefactos intermedios de iconos
 assets/icon.iconset/
 
