@@ -1047,6 +1047,52 @@ button { font-family: inherit; }
 }
 .guide-provider-plans li { margin-bottom: 3px; }
 .guide-provider-install { margin-bottom: 0 !important; }
+
+.guide-provider-block { margin: 0 0 11px; }
+.guide-provider-block .guide-label { margin-bottom: 6px; }
+.guide-provider-steps {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  counter-reset: gpstep;
+  list-style: none;
+}
+.guide-provider-steps li {
+  position: relative;
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+.guide-provider-steps li::before {
+  counter-increment: gpstep;
+  content: counter(gpstep);
+  position: absolute;
+  left: -20px;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--glow-1), var(--glow-2));
+  display: grid;
+  place-items: center;
+}
+.guide-provider-steps li:last-child { margin-bottom: 0; }
+.guide-provider-steps b { color: var(--text); font-weight: 600; }
+.guide-provider-steps i { font-style: normal; color: var(--text); opacity: 0.92; }
+.guide-provider-steps kbd,
+.guide-provider-steps code {
+  font-family: "SF Mono", ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  border: 0.5px solid var(--hairline);
+  border-radius: 5px;
+  padding: 0.5px 5px;
+}
 .guide-foot {
   margin: 18px 0 0;
   font-size: 12px;

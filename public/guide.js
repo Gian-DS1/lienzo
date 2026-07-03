@@ -64,7 +64,12 @@
       name: 'Claude Code',
       vendor: 'Anthropic',
       strength: 'Razonamiento largo, refactors amplios y seguir instrucciones complejas.',
-      login: 'Dentro de la tarjeta escribe <code>/login</code> y elige tu método.',
+      steps: [
+        'Pulsa <b>Claude Code</b>. La tarjeta muestra <i>«Welcome to Claude Code»</i> y te pide elegir un <b>tema</b> (Dark/Light): muévete con ↑↓ y pulsa <kbd>Enter</kbd>.',
+        'Aparece <i>«Select login method»</i>. Elige <b>1. Claude account with subscription</b> (o <b>2. Anthropic Console</b> si pagas por API) y <kbd>Enter</kbd>.',
+        'Se abre tu navegador en <code>claude.ai</code>. Inicia sesión y pulsa <b>Authorize</b>.',
+        'Vuelve a la tarjeta: verás <i>«Login successful»</i> y el prompt listo. Ya puedes escribir tu primera instrucción.',
+      ],
       plans: [
         'Suscripción <b>Claude Pro / Max / Team / Enterprise</b> (recomendado, sin costo por uso).',
         'Cuenta <b>Anthropic Console</b> con facturación por API.',
@@ -76,7 +81,12 @@
       name: 'Codex',
       vendor: 'OpenAI · GPT',
       strength: 'Generación de código rápida y precisa; buen compañero para tests.',
-      login: 'Al abrirlo, elige <b>«Sign in with ChatGPT»</b> y autoriza en el navegador.',
+      steps: [
+        'Pulsa <b>Codex</b>. La tarjeta muestra <i>«Welcome to Codex»</i> y dos opciones.',
+        'Elige <b>«Sign in with ChatGPT»</b> y pulsa <kbd>Enter</kbd>: se abre el navegador.',
+        'Inicia sesión con tu cuenta de <b>ChatGPT</b> (Plus/Pro/Team) y pulsa <b>Allow</b>.',
+        'Vuelve a la tarjeta: verás <i>«Signed in»</i> y el prompt de Codex. ¿Prefieres API? Elige <b>«connect an API key»</b>.',
+      ],
       plans: [
         'Plan <b>ChatGPT Plus / Pro / Team</b> incluye Codex.',
         'O una <b>API key de OpenAI</b> para facturación por uso.',
@@ -88,10 +98,15 @@
       name: 'Gemini',
       vendor: 'Google',
       strength: 'Contexto enorme (millones de tokens) y multimodal.',
-      login: 'Al abrirlo, inicia sesión con tu <b>cuenta de Google</b> en el navegador.',
+      steps: [
+        'Pulsa <b>Gemini</b>. Puede avisar <i>«running in your home directory»</i> (normal) y pedirte un <b>tema</b>.',
+        'En el menú de acceso elige <b>«Login with Google»</b>: se abre el navegador.',
+        'Inicia sesión con tu <b>cuenta de Google</b> y acepta los permisos.',
+        'Vuelve a la tarjeta: aparece el prompt de Gemini listo para escribir.',
+      ],
       plans: [
         '<b>Gemini Code Assist</b> tiene un nivel gratuito generoso con tu cuenta Google.',
-        'O exporta una <b>API key</b> de AI Studio: <code>export GEMINI_API_KEY=…</code>',
+        'O una <b>API key</b> de AI Studio: ejecuta <code>export GEMINI_API_KEY=…</code> antes de abrirlo.',
       ],
       install: 'npm i -g @google/gemini-cli',
     },
@@ -100,7 +115,12 @@
       name: 'Copilot',
       vendor: 'GitHub',
       strength: 'Integración con tu contexto de GitHub (issues, PRs, repos).',
-      login: 'Dentro de la tarjeta usa <code>/login</code> y autoriza con tu cuenta de GitHub.',
+      steps: [
+        'Pulsa <b>Copilot</b>. Si no has entrado, escribe <code>/login</code> y <kbd>Enter</kbd>.',
+        'La tarjeta muestra un <b>código de dispositivo</b> (p. ej. <code>AB12-CD34</code>) y la URL <code>github.com/login/device</code>.',
+        'Abre esa URL, pega el código y autoriza con tu cuenta de <b>GitHub</b> (con suscripción Copilot activa).',
+        'Vuelve a la tarjeta: verás <i>«Signed in as tu-usuario»</i>. Listo.',
+      ],
       plans: [
         'Requiere una suscripción <b>GitHub Copilot</b> (Free, Pro, Business o Enterprise).',
         'El plan Free da un número limitado de peticiones al mes.',
@@ -185,8 +205,14 @@
                 <div><b>${p.name}</b><span class="guide-provider-vendor">${p.vendor}</span></div>
               </div>
               <p class="guide-provider-strength"><span class="guide-label">Fuerte en</span> ${p.strength}</p>
-              <p class="guide-provider-login"><span class="guide-label">Iniciar sesión</span> ${p.login}</p>
-              <ul class="guide-provider-plans">${p.plans.map((x) => `<li>${x}</li>`).join('')}</ul>
+              <div class="guide-provider-block">
+                <span class="guide-label">Paso a paso · qué verás</span>
+                <ol class="guide-provider-steps">${p.steps.map((x) => `<li>${x}</li>`).join('')}</ol>
+              </div>
+              <div class="guide-provider-block">
+                <span class="guide-label">Qué necesitas</span>
+                <ul class="guide-provider-plans">${p.plans.map((x) => `<li>${x}</li>`).join('')}</ul>
+              </div>
               <p class="guide-provider-install"><span class="guide-label">Instalar</span> <code>${p.install}</code></p>
             </div>`).join('')}
         </div>

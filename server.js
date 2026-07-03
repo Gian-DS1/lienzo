@@ -84,6 +84,32 @@ function spawnSpec(bin, extraArgs) {
   return { file: bin, args: extraArgs };
 }
 
+// PATH para los procesos de agentes. Cuando LIENZO se lanza desde el Finder o un
+// acceso directo, hereda un PATH mínimo sin el directorio de node; los CLIs de npm
+// (codex, gemini, copilot…) son scripts con shebang `#!/usr/bin/env node` y mueren
+// con «env: node: No such file or directory» (código 127). Anteponemos el directorio
+// del node que ejecuta este servidor (y rutas comunes) al PATH heredado.
+function agentPath() {
+  const parts = [path.dirname(process.execPath)];
+  if (IS_WIN) {
+    if (process.env.APPDATA) parts.push(path.join(process.env.APPDATA, 'npm'));
+  } else {
+    parts.push('/usr/local/bin', '/opt/homebrew/bin', path.join(HOME, '.local', 'bin'));
+  }
+  const current = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  for (const p of current) if (!parts.includes(p)) parts.push(p);
+  return parts.join(path.delimiter);
+}
+
+// Entorno de los agentes con el PATH reforzado. En Windows la clave puede ser
+// «Path»: hay que sobrescribir la existente, no añadir una «PATH» duplicada.
+function agentEnv() {
+  const env = { ...process.env, TERM: 'xterm-256color', COLORTERM: 'truecolor' };
+  const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
+  env[pathKey] = agentPath();
+  return env;
+}
+
 // ---------------------------------------------------------------------------
 // Modelos locales (Ollama). Corre modelos en tu propia máquina, sin cuenta.
 // ---------------------------------------------------------------------------
@@ -280,7 +306,7 @@ wss.on('connection', (ws) => {
           cols: msg.cols || 80,
           rows: msg.rows || 24,
           cwd,
-          env: { ...process.env, TERM: 'xterm-256color', COLORTERM: 'truecolor' },
+          env: agentEnv(),
         });
         terms.set(msg.id, proc);
         proc.onData((data) => send({ type: 'data', id: msg.id, data }));
