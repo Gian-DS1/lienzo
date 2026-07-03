@@ -122,11 +122,13 @@ y se exporta a `.icns` (macOS) y `.ico` (Windows).
   con el botón <kbd>?</kbd> de la barra: un recorrido de coach-marks con anillo
   de gradiente que se desliza entre elementos, demos en vivo (invoca un agente,
   enciende el resplandor Siri) y navegación con ←/→/Esc.
-- **Guía** — el botón <kbd>Guía</kbd> abre un panel deslizante con tres pestañas:
+- **Guía** — el botón <kbd>Guía</kbd> abre un panel deslizante con cuatro pestañas:
   *Flujo óptimo* (seis pasos para coordinar varios agentes a la vez, más combos
-  recomendados), *Membresías* (cómo iniciar sesión y qué suscripción usa cada
-  modelo en la nube: Claude, Codex/GPT, Gemini, Copilot) y *Local* (cómo instalar
-  Ollama y correr modelos en tu propia máquina).
+  recomendados), *Orquestar* (qué agente/modelo usar según la tarea, cómo gastar
+  menos tokens en Claude Code, prompts que rinden y comandos por escenario),
+  *Membresías* (cómo iniciar sesión y qué suscripción usa cada modelo en la nube:
+  Claude, Codex/GPT, Gemini, Copilot) y *Local* (cómo instalar Ollama y correr
+  modelos en tu propia máquina).
 - **Nombres de tripulación** — los agentes se llaman Marshall, Chase, Ada, Grace, Linus…
   para poder dirigirte a ellos por voz.
 - **Difusión** — la barra superior envía una misma orden a todos los agentes vivos.
@@ -158,7 +160,7 @@ public/index.html   Estructura: barra superior, viewport, controles de zoom, chi
 public/app.js       Canvas (pan/zoom/drag/resize), xterm.js por agente, difusión,
                     Web Speech API para voz, temas.
 public/tutorial.js  Recorrido de coach-marks de la primera visita.
-public/guide.js     Panel de Guía (flujo óptimo + membresías).
+public/guide.js     Panel de Guía (flujo óptimo · orquestar · membresías · local).
 public/styles.css   Temas y componentes vía variables CSS.
 assets/             Icono en PNG/.icns/.ico y el generador en Swift.
 ```

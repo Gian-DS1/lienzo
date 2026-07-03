@@ -163,6 +163,94 @@
     },
   ];
 
+  // --- Orquestar: qué agente por tarea, ahorro de tokens, prompts, comandos ---
+  const PICK = [
+    { tag: 'Refactor amplio · specs largas',
+      text: '<b>Claude Code</b> — razona sobre muchos archivos y sigue instrucciones ' +
+        'complejas. Sube a Opus (o el modelo tope) solo para lo difícil; Sonnet basta para el día a día.' },
+    { tag: 'Código y tests, rápido',
+      text: '<b>Codex</b> (GPT) — generación ágil y precisa; buen compañero para cubrir con ' +
+        'pruebas lo que otro implementó.' },
+    { tag: 'Leer un repo entero de golpe',
+      text: '<b>Gemini</b> — contexto de millones de tokens y barato por token: ideal para ' +
+        '«entiende todo este proyecto y resúmelo».' },
+    { tag: 'Contexto de GitHub',
+      text: '<b>Copilot</b> — conectado a tus issues, PRs y repositorios.' },
+    { tag: 'Repetitivo · privado · gratis',
+      text: '<b>Ollama local</b> — sin costo ni conexión. Para código: <code>qwen2.5-coder</code> ' +
+        'o <code>deepseek-coder-v2</code>.' },
+    { tag: 'Bug difícil',
+      text: 'Pide la <b>causa raíz</b> a dos modelos en paralelo (p. ej. Claude y Codex) y ' +
+        'quédate con la hipótesis que convenza.' },
+  ];
+
+  const SAVE = [
+    {
+      icon: '◆',
+      title: 'Baja de modelo cuando la tarea es fácil',
+      body: 'Con <code>/model</code> elige uno pequeño (Haiku) para lo trivial, uno equilibrado ' +
+        '(Sonnet) para el día a día, y reserva el más capaz (Opus o el tope de gama) para el ' +
+        'razonamiento duro. Pagar el modelo caro por renombrar variables es tirar tokens.',
+    },
+    {
+      icon: '◆',
+      title: 'Limpia el contexto entre tareas',
+      body: 'El historial se reenvía —y se cobra— en cada mensaje. Usa <code>/clear</code> al ' +
+        'cambiar de tema, y <code>/compact</code> para condensar una sesión larga que sigue ' +
+        'siendo relevante.',
+    },
+    {
+      icon: '◆',
+      title: 'Da los archivos, no los busques',
+      body: 'Menciona rutas con <code>@src/archivo</code> para que el agente no gaste tokens ' +
+        'explorando el repo a ciegas.',
+    },
+    {
+      icon: '◆',
+      title: 'Fija el contexto una sola vez',
+      body: 'Un <code>CLAUDE.md</code> (créalo con <code>/init</code>) guarda convenciones, ' +
+        'comandos y estructura del proyecto, para no repetirlos en cada prompt.',
+    },
+    {
+      icon: '◆',
+      title: 'Planifica antes de editar',
+      body: 'En cambios grandes, pide un plan antes de tocar código (modo plan). Evita trabajo ' +
+        'desechado y re-prompts caros por ir a ciegas.',
+    },
+    {
+      icon: '◆',
+      title: 'Descarga lo pesado a lo barato',
+      body: 'Usa Gemini o un modelo local para leer y resumir montañas de código; reserva el ' +
+        'modelo caro para decidir y escribir lo fino.',
+    },
+  ];
+
+  const PROMPTS = [
+    { tag: 'Objetivo + límites + criterio',
+      text: '«Implementa X en <code>@archivo</code>. No cambies la API pública. Hecho = tests ' +
+        'verdes y <code>npm run build</code> sin errores.»' },
+    { tag: 'Contexto primero',
+      text: 'Usa «Ordena a todos» para dar objetivo, restricciones y dónde está el código antes ' +
+        'de repartir roles. Un minuto de contexto compartido ahorra diez de descoordinación.' },
+    { tag: 'Rol explícito',
+      text: '«Eres el <b>probador</b>: escribe y corre los tests de lo que hizo Marshall; no ' +
+        'implementes tú.»' },
+    { tag: 'Verificación en frío',
+      text: '«Revisa este diff y busca solo bugs reales, con el caso que los dispara.» Que quien ' +
+        'revisa no sea quien escribió.' },
+  ];
+
+  const COMMANDS = [
+    { cmd: '/clear', when: 'Empezar una tarea nueva sin arrastrar (ni pagar) el historial anterior.' },
+    { cmd: '/compact', when: 'Condensar una sesión larga que aún necesitas mantener.' },
+    { cmd: '/model', when: 'Subir o bajar de modelo según la dificultad y el costo.' },
+    { cmd: '/init', when: 'Generar un CLAUDE.md con el contexto del repo.' },
+    { cmd: '/cost', when: 'Ver los tokens y el gasto de la sesión.' },
+    { cmd: '/review', when: 'Revisar un PR o los cambios pendientes.' },
+    { cmd: 'Esc', when: 'Interrumpir para corregir el rumbo sin relanzar el prompt.' },
+    { cmd: '«ultrathink»', when: 'Subir el presupuesto de razonamiento en algo difícil (cuesta más: con criterio).' },
+  ];
+
   // ------------------------------------------------------------------ DOM
   const scrim = el('div', 'guide-scrim hidden');
   const panel = el('aside', 'guide-panel hidden');
@@ -177,6 +265,7 @@
     </div>
     <div class="guide-tabs" role="tablist">
       <button class="guide-tab on" data-tab="flow" role="tab">Flujo óptimo</button>
+      <button class="guide-tab" data-tab="orchestrate" role="tab">Orquestar</button>
       <button class="guide-tab" data-tab="plans" role="tab">Membresías</button>
       <button class="guide-tab" data-tab="local" role="tab">Local</button>
     </div>
@@ -195,6 +284,42 @@
           ${COMBOS.map((c) => `
             <div class="guide-combo"><span class="guide-combo-tag">${c.tag}</span><p>${c.text}</p></div>`).join('')}
         </div>
+      </section>
+
+      <section class="guide-pane hidden" data-pane="orchestrate">
+        <p class="guide-lead">Cómo repartir el trabajo, <b>elegir el modelo por la tarea</b> y
+          gastar menos tokens. Los comandos son de <b>Claude Code</b>; los demás agentes tienen
+          los suyos (mira su <code>/help</code>).</p>
+
+        <h3 class="guide-subhead">Elige el agente por la tarea</h3>
+        <div class="guide-combos">
+          ${PICK.map((c) => `
+            <div class="guide-combo"><span class="guide-combo-tag">${c.tag}</span><p>${c.text}</p></div>`).join('')}
+        </div>
+
+        <h3 class="guide-subhead">Gasta menos tokens (sobre todo en Claude Code)</h3>
+        <ol class="guide-steps">
+          ${SAVE.map((s) => `
+            <li class="guide-step">
+              <span class="guide-step-icon">${s.icon}</span>
+              <div><h3>${s.title}</h3><p>${s.body}</p></div>
+            </li>`).join('')}
+        </ol>
+
+        <h3 class="guide-subhead">Prompts que rinden</h3>
+        <div class="guide-combos">
+          ${PROMPTS.map((c) => `
+            <div class="guide-combo"><span class="guide-combo-tag">${c.tag}</span><p>${c.text}</p></div>`).join('')}
+        </div>
+
+        <h3 class="guide-subhead">Comandos útiles · Claude Code</h3>
+        <div class="guide-cmds">
+          ${COMMANDS.map((c) => `
+            <div class="guide-cmd"><code>${c.cmd}</code><span>${c.when}</span></div>`).join('')}
+        </div>
+        <p class="guide-foot">Regla de oro del costo: <b>modelo pequeño por defecto, grande solo
+          cuando la tarea lo pida</b>, y <code>/clear</code> al cambiar de tema. Reparte por rol
+          (constructor · probador · revisor) y deja que <b>uno solo</b> integre.</p>
       </section>
 
       <section class="guide-pane hidden" data-pane="plans">
