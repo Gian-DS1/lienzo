@@ -123,10 +123,16 @@ Ya está instalado. No necesitas volver a tocar PowerShell para usarlo.
 - Busca el icono **LIENZO** (una chispa de colores) en tu **Escritorio** y haz
   **doble clic**. También puedes pulsar la tecla Windows, escribir `LIENZO` y
   pulsar Enter.
-- La primera vez, Windows abre tu navegador (Edge o Chrome) en una ventana
-  **sin barra de direcciones**: esa es la app.
+- Se abre una **ventana propia de LIENZO** — una ventana nativa de Windows con
+  **WebView2** (el motor que Windows ya trae de serie): no usa ni abre ningún
+  navegador. Si tu equipo no tuviera WebView2 (muy raro), LIENZO cae solo a una
+  ventana de Edge sin barra de direcciones.
 - Detrás, LIENZO arranca su pequeño servidor local automáticamente. No verás
   ninguna ventana negra de consola: es silencioso.
+
+> **Nota:** el control por **voz** 🎙 no está disponible en la ventana nativa.
+> Si quieres usarlo, crea el archivo `%USERPROFILE%\.lienzo.env` con la línea
+> `LIENZO_WINDOW=chrome` y LIENZO abrirá con Chrome/Edge en modo app.
 
 > **Aviso de SmartScreen / Firewall:** la primera vez, Windows puede preguntar si
 > permites la app o mostrar «Windows protegió tu PC». Pulsa **«Más información» →

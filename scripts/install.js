@@ -116,6 +116,13 @@ $s.Save()`;
   try { mkShortcut(desktop); log(`✓ Acceso directo en el Escritorio`); } catch (e) { log('· No se pudo crear el acceso del Escritorio: ' + e.message); }
   try { mkShortcut(startMenu); log(`✓ Acceso directo en el menú Inicio`); } catch (e) { log('· No se pudo crear el acceso del menú Inicio: ' + e.message); }
   log(`  Lanzador: ${vbs}`);
+
+  // DLLs del SDK de WebView2 para la ventana nativa (dependencia descargada,
+  // no un binario nuestro). Mejor esfuerzo: sin red, el lanzador reintenta y
+  // mientras tanto abre con Edge.
+  try {
+    execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'fetch-webview2.js')], { stdio: 'inherit' });
+  } catch { log('· SDK de WebView2 no descargado; se reintentará al abrir LIENZO.'); }
 }
 
 // --------------------------------------------------------------------- Linux

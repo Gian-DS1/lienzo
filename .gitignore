@@ -4,6 +4,9 @@ node_modules/
 # Lanzadores generados por `npm run setup` (específicos de cada máquina)
 launchers/
 
+# SDK de WebView2 descargado por scripts/fetch-webview2.js (ventana de Windows)
+webview2/
+
 # Artefactos intermedios de iconos
 assets/icon.iconset/
 

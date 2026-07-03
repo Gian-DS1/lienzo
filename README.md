@@ -33,16 +33,19 @@ sistema (usa este repo y tu instalación de Node — nada de rutas fijas):
 | **Windows** | Acceso directo en Escritorio y menú Inicio | Doble clic en **LIENZO** |
 | **Linux** | Entrada `LIENZO` en el menú de apps | Búscala en tu lanzador |
 
-Al abrirlo, LIENZO arranca su servidor local (si no está ya corriendo) y abre una
-ventana de app sin barra de navegador. **No hace falta tener Chrome** (ni ningún
-otro navegador concreto) y no se instala ningún ejecutable:
+Al abrirlo, LIENZO arranca su servidor local (si no está ya corriendo) y se abre
+como un **programa con ventana propia, sin usar ningún navegador** y sin instalar
+ejecutables:
 
 - **macOS** — ventana **nativa** con el WebKit del sistema (un script de
   `osascript` que macOS trae de serie).
-- **Windows** — modo `--app` de **Edge**, que viene preinstalado (o Chrome si está).
+- **Windows** — ventana **nativa** WinForms con **WebView2** (el runtime de
+  Microsoft preinstalado en Windows 11 y casi todo Windows 10), creada por
+  PowerShell; las DLLs oficiales del SDK las descarga el setup a `webview2/`
+  (como una dependencia más). Si faltara el runtime, cae solo a Edge en modo app.
 - **Linux** — modo `--app` de Chromium/Chrome, o el navegador por defecto.
 
-¿Prefieres otra ventana en macOS? Añade `LIENZO_WINDOW=chrome` (modo app de
+¿Prefieres otra ventana? Añade `LIENZO_WINDOW=chrome` (modo app de
 Chrome/Brave/Edge) o `LIENZO_WINDOW=browser` (navegador por defecto) a `~/.lienzo.env`.
 
 Si prefieres la terminal: `npm start` y abre <http://localhost:3000>.
@@ -127,8 +130,8 @@ y se exporta a `.icns` (macOS) y `.ico` (Windows).
 - **Nombres de tripulación** — los agentes se llaman Marshall, Chase, Ada, Grace, Linus…
   para poder dirigirte a ellos por voz.
 - **Difusión** — la barra superior envía una misma orden a todos los agentes vivos.
-- **Control por voz** 🎙 — pulsa el micrófono (requiere Chrome o Safari; la ventana
-  nativa de macOS no trae reconocimiento de voz — usa `LIENZO_WINDOW=chrome`) y habla:
+- **Control por voz** 🎙 — pulsa el micrófono (requiere Chrome o Safari; las ventanas
+  nativas de macOS/Windows no traen reconocimiento de voz — usa `LIENZO_WINDOW=chrome`) y habla:
   - `«Marshall, corre los tests»` → envía la orden a ese agente
   - `«todos: describe tu estado»` → difusión a todos
   - `«nuevo agente claude»` / `«abre una terminal»` → invoca un agente
@@ -145,7 +148,11 @@ server.js           Express + WebSocket. Detección de CLIs multiplataforma y
 scripts/open.js     Lanzador: arranca el servidor y abre la ventana de la app
                     (Windows / macOS / Linux, sin dependencias).
 scripts/webview-mac.js  Ventana nativa de macOS: WKWebView del sistema vía
-                    osascript (JXA) — sin Chrome y sin binarios que compilar.
+                    osascript (JXA) — sin navegador y sin binarios que compilar.
+scripts/webview-win.ps1 Ventana nativa de Windows: WinForms + WebView2 vía
+                    PowerShell — sin navegador y sin binarios que compilar.
+scripts/fetch-webview2.js  Descarga las DLLs oficiales del SDK de WebView2
+                    (NuGet) a webview2/, como una dependencia más.
 scripts/install.js  Crea el acceso directo nativo del sistema (npm run setup).
 public/index.html   Estructura: barra superior, viewport, controles de zoom, chip de voz.
 public/app.js       Canvas (pan/zoom/drag/resize), xterm.js por agente, difusión,

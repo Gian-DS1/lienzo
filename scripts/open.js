@@ -100,7 +100,9 @@ function firstFile(paths) {
   return null;
 }
 
-function openWindows() {
+// Cadena clásica de Windows: modo --app de Edge (preinstalado) o Chrome, o el
+// navegador por defecto. Plan B de la ventana nativa y modo LIENZO_WINDOW=chrome.
+function openWinBrowsers(allowApp) {
   const pf = process.env['ProgramFiles'] || 'C:\\Program Files';
   const pf86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
   const local = process.env['LOCALAPPDATA'] || '';
@@ -113,13 +115,51 @@ function openWindows() {
     path.join(pf86, 'Google', 'Chrome', 'Application', 'chrome.exe'),
     path.join(local, 'Google', 'Chrome', 'Application', 'chrome.exe'),
   ]);
-  const app = chrome || edge;
+  const app = allowApp && (edge || chrome);
   if (app) {
     launchDetached(app, [`--app=${APP_URL}`, '--new-window']);
   } else {
     // Navegador por defecto
     launchDetached('cmd', ['/c', 'start', '""', APP_URL], { windowsHide: true });
   }
+}
+
+// Ventana nativa de Windows: WinForms + WebView2 creada por PowerShell
+// (scripts/webview-win.ps1) — sin navegador y sin binarios propios. Si el SDK
+// aún no está descargado o el script muere al arrancar, se cae a Edge/Chrome.
+function openWinNative() {
+  const dll = path.join(ROOT, 'webview2', 'Microsoft.Web.WebView2.WinForms.dll');
+  if (!fs.existsSync(dll)) {
+    // SDK ausente (setup sin red): descargarlo para la próxima y abrir Edge hoy.
+    launchDetached(process.execPath, [path.join(ROOT, 'scripts', 'fetch-webview2.js')]);
+    return openWinBrowsers(true);
+  }
+  return new Promise((resolve) => {
+    const icon = path.join(ROOT, 'assets', 'icon.ico');
+    const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+      '-WindowStyle', 'Hidden', '-File', path.join(ROOT, 'scripts', 'webview-win.ps1'),
+      '-Url', APP_URL];
+    if (fs.existsSync(icon)) args.push('-Icon', icon);
+    const child = spawn('powershell', args, { detached: true, stdio: 'ignore', windowsHide: true });
+    let settled = false;
+    const settle = (fallback) => {
+      if (settled) return;
+      settled = true;
+      if (fallback) openWinBrowsers(true); else child.unref();
+      resolve();
+    };
+    child.on('error', () => settle(true));
+    child.on('exit', (code) => settle(code !== 0));
+    // PowerShell + WebView2 tardan en arrancar: margen antes de darlo por bueno
+    setTimeout(() => settle(false), 2500);
+  });
+}
+
+function openWindows() {
+  const mode = process.env.LIENZO_WINDOW || userEnvVars().LIENZO_WINDOW || 'native';
+  if (mode === 'chrome') return openWinBrowsers(true);
+  if (mode === 'browser') return openWinBrowsers(false);
+  return openWinNative();
 }
 
 // Cadena clásica: modo --app de Chrome/Brave/Edge si están, o el navegador
