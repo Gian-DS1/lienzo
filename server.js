@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 // Vincular solo a loopback: LIENZO arranca shells reales; nunca debe quedar
 // expuesto a la red local. Ponible en 0.0.0.0 explícitamente con HOST si se sabe.
 const HOST = process.env.HOST || '127.0.0.1';
+const HOST_IS_LOOPBACK = ['127.0.0.1', 'localhost', '::1'].includes(HOST);
 const HOME = os.homedir();
 const IS_WIN = process.platform === 'win32';
 
@@ -24,6 +25,20 @@ const ALLOWED_HOSTS = new Set([
 const ALLOWED_ORIGINS = new Set([
   `http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`, `http://[::1]:${PORT}`,
 ]);
+// Con un HOST no-loopback explícito hay que admitir además las direcciones
+// reales de la máquina: si no, el HTTP serviría la página a la LAN pero el
+// handshake WS rechazaría a todos los clientes (terminales muertos). Un Host
+// de DNS rebinding (p. ej. evil.com:3000) sigue fuera de la lista.
+if (!HOST_IS_LOOPBACK) {
+  const addrs = HOST === '0.0.0.0' || HOST === '::'
+    ? Object.values(os.networkInterfaces()).flat().map((i) => i && i.address).filter(Boolean)
+    : [HOST];
+  for (const addr of addrs) {
+    const h = addr.includes(':') ? `[${addr}]` : addr; // IPv6 va entre corchetes
+    ALLOWED_HOSTS.add(`${h}:${PORT}`);
+    ALLOWED_ORIGINS.add(`http://${h}:${PORT}`);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Agent CLI detection
@@ -108,10 +123,30 @@ function agentPath() {
   return cachedAgentPath;
 }
 
+// Claves de API para los agentes (p. ej. GEMINI_API_KEY): lanzado desde el
+// Dock/acceso directo, LIENZO no hereda los `export` del shell del usuario,
+// así que se leen de ~/.lienzo.env (líneas CLAVE=valor, # para comentarios).
+function userEnvFile() {
+  const env = {};
+  try {
+    const text = fs.readFileSync(path.join(HOME, '.lienzo.env'), 'utf8');
+    for (const line of text.split(/\r?\n/)) {
+      const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+      if (!m) continue;
+      let v = m[2];
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+        v = v.slice(1, -1);
+      }
+      env[m[1]] = v;
+    }
+  } catch { /* sin fichero: nada que añadir */ }
+  return env;
+}
+
 // Entorno de los agentes con el PATH reforzado. En Windows la clave puede ser
 // «Path»: hay que sobrescribir la existente, no añadir una «PATH» duplicada.
 function agentEnv() {
-  const env = { ...process.env, TERM: 'xterm-256color', COLORTERM: 'truecolor' };
+  const env = { ...process.env, ...userEnvFile(), TERM: 'xterm-256color', COLORTERM: 'truecolor' };
   const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
   env[pathKey] = agentPath();
   return env;
@@ -157,9 +192,10 @@ function ollamaModels() {
   });
 }
 
-// Nombre de modelo seguro (evita inyección de argumentos). Cubre etiquetas como
+// Nombre de modelo seguro (evita inyección de argumentos; no puede empezar por
+// «-» para que ollama no lo interprete como flag). Cubre etiquetas como
 // llama3:latest, qwen2.5-coder:7b, library/llama3, etc.
-const MODEL_RE = /^[\w./:-]{1,120}$/;
+const MODEL_RE = /^[\w][\w./:-]{0,119}$/;
 
 const AGENT_DEFS = [
   {
@@ -306,7 +342,10 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'spawn') {
       const def = AGENT_DEFS.find((d) => d.type === msg.agent);
-      const bin = def && def.resolve();
+      // Binario desde la caché de detección: evita relanzar which/where (síncrono,
+      // bloquea todos los terminales) por spawn, y coincide con lo que vio la UI.
+      const found = def && detectAgents().find((a) => a.type === def.type);
+      const bin = found && found.bin;
       if (!bin) {
         send({ type: 'error', id: msg.id, message: `Agente "${msg.agent}" no disponible en esta máquina.` });
         return;
@@ -367,8 +406,9 @@ wss.on('connection', (ws) => {
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
+    const hint = IS_WIN ? '$env:PORT=3001; npm start' : 'PORT=3001 npm start';
     console.error(`El puerto ${PORT} ya está en uso. ¿LIENZO ya está abierto? ` +
-      `Ciérralo, o arranca con otro puerto:  PORT=3001 npm start`);
+      `Ciérralo, o arranca con otro puerto:  ${hint}`);
   } else {
     console.error('Error del servidor:', err.message);
   }
@@ -377,6 +417,9 @@ server.on('error', (err) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`LIENZO listo en http://localhost:${PORT} (bind ${HOST})`);
+  if (!HOST_IS_LOOPBACK) {
+    console.log('⚠ HOST no-loopback: LIENZO queda accesible desde la red y abre shells reales.');
+  }
   console.log('Agentes detectados:');
   for (const a of detectAgents()) {
     console.log(`  ${a.available ? '✓' : '✗'} ${a.label}${a.available ? `  (${a.bin})` : ''}`);

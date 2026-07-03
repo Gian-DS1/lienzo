@@ -30,9 +30,12 @@ function installMac() {
   fs.mkdirSync(macOS, { recursive: true });
   fs.mkdirSync(resources, { recursive: true });
 
+  // Rutas embebidas entre comillas simples: es el único quoting de bash sin
+  // caracteres activos (dólar, backtick, barra); solo se escapa la comilla simple.
+  const shq = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
   const exec = `#!/bin/bash
 # Resolver node (esta instalación primero, luego rutas comunes)
-NODE="${NODE}"
+NODE=${shq(NODE)}
 [ -x "$NODE" ] || NODE="$(command -v node)"
 for c in "$HOME/.nvm/versions/node/"*/bin/node /opt/homebrew/bin/node /usr/local/bin/node; do
   [ -x "$NODE" ] && break; [ -x "$c" ] && NODE="$c"
@@ -41,7 +44,7 @@ if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
   osascript -e 'display alert "LIENZO" message "No se encontró Node.js. Instálalo desde nodejs.org." as critical'
   exit 1
 fi
-exec "$NODE" "${OPEN}"
+exec "$NODE" ${shq(OPEN)}
 `;
   const execPath = path.join(macOS, 'LIENZO');
   fs.writeFileSync(execPath, exec);
@@ -121,11 +124,14 @@ function installLinux() {
   fs.mkdirSync(appsDir, { recursive: true });
   const iconPng = path.join(ASSETS, 'icon-1024.png');
   const desktopFile = path.join(appsDir, 'lienzo.desktop');
+  // Argumento citado de Exec según la spec de .desktop: se escapan " ` $ \
+  // con barra invertida y el % se duplica (es código de campo).
+  const dq = (s) => '"' + s.replace(/[\\"$`]/g, '\\$&').replace(/%/g, '%%') + '"';
   fs.writeFileSync(desktopFile, `[Desktop Entry]
 Type=Application
 Name=LIENZO
 Comment=Comanda un ejército de agentes de IA
-Exec="${NODE}" "${OPEN}"
+Exec=${dq(NODE)} ${dq(OPEN)}
 Icon=${fs.existsSync(iconPng) ? iconPng : 'utilities-terminal'}
 Terminal=false
 Categories=Development;Utility;

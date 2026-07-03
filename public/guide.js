@@ -99,14 +99,17 @@
       vendor: 'Google',
       strength: 'Contexto enorme (millones de tokens) y multimodal.',
       steps: [
-        'Pulsa <b>Gemini</b>. Puede avisar <i>«running in your home directory»</i> (normal) y pedirte un <b>tema</b>.',
-        'En el menú de acceso elige <b>«Login with Google»</b>: se abre el navegador.',
-        'Inicia sesión con tu <b>cuenta de Google</b> y acepta los permisos.',
-        'Vuelve a la tarjeta: aparece el prompt de Gemini listo para escribir.',
+        '⚠ <b>«Sign in with Google»</b> para cuentas individuales fue <b>retirado por Google</b> ' +
+          '(julio 2026): da <i>«This client is no longer supported…»</i> y sugiere migrar a ' +
+          'Antigravity. Usa una <b>API key</b>: sigue funcionando y es gratis.',
+        'Consigue tu clave en <code>aistudio.google.com/apikey</code> con tu cuenta de Google.',
+        'Crea el archivo <code>~/.lienzo.env</code> con la línea <code>GEMINI_API_KEY=tu_clave</code> ' +
+          'y reinicia LIENZO (así la ven los agentes aunque abras LIENZO desde el Dock).',
+        'Pulsa <b>Gemini</b> y en el menú de acceso elige <b>«Use Gemini API Key»</b> y <kbd>Enter</kbd>. Listo.',
       ],
       plans: [
-        '<b>Gemini Code Assist</b> tiene un nivel gratuito generoso con tu cuenta Google.',
-        'O una <b>API key</b> de AI Studio: ejecuta <code>export GEMINI_API_KEY=…</code> antes de abrirlo.',
+        '<b>API key de AI Studio</b> (gratuita, nivel generoso) — la vía recomendada hoy.',
+        'Cuentas de pago <b>Code Assist Standard/Enterprise</b> o <b>Vertex AI</b> siguen soportando login corporativo.',
       ],
       install: 'npm i -g @google/gemini-cli',
     },

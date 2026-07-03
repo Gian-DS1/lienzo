@@ -61,6 +61,10 @@ y se exporta a `.icns` (macOS) y `.ico` (Windows).
 
 - **Canvas infinito** — paneo (arrastra el fondo o rueda del ratón), zoom (⌘/Ctrl + rueda
   o botones −/+), tarjetas arrastrables por su cabecera y redimensionables por la esquina.
+- **Organizar con un clic** — el botón <kbd>Organizar</kbd> alinea todas las tarjetas en
+  **cuadrícula, fila, columna o cascada** con animación y encuadre automático de la vista.
+  Personalizable: separación, número de columnas, orden (llegada/nombre/agente) e igualar
+  tamaños; tus preferencias se recuerdan. También por voz: `«organiza el lienzo»`.
 - **Agentes reales en paralelo** — cada tarjeta es un proceso PTY independiente con un
   terminal completo (xterm.js). Los agentes se detectan automáticamente en tu máquina:
 
@@ -78,6 +82,14 @@ y se exporta a `.icns` (macOS) y `.ico` (Windows).
   Los que no estén instalados aparecen deshabilitados; instala uno y reinicia el
   servidor para activarlo. La primera vez, cada agente en la nube pide iniciar sesión
   con tu propia cuenta dentro de su tarjeta.
+
+  > 🔑 **Claves de API para agentes** — si un CLI necesita una variable de entorno,
+  > ponla en `~/.lienzo.env` (líneas `CLAVE=valor`); LIENZO se la pasa a todos los
+  > agentes aunque lo abras desde el Dock o un acceso directo, donde los `export`
+  > de tu shell no llegan. Ejemplo: Google retiró el login con cuenta individual
+  > de Gemini CLI (julio 2026), así que crea una API key gratis en
+  > [aistudio.google.com/apikey](https://aistudio.google.com/apikey), añade
+  > `GEMINI_API_KEY=tu_clave` a `~/.lienzo.env` y elige «Use Gemini API Key» en su tarjeta.
 - **Modelos locales** 🖥️ — el botón **Ollama** (con distintivo `local`) corre modelos
   en tu propia máquina: **gratis, privados y sin conexión**. Al pulsarlo eliges qué
   modelo ejecutar de una lista de los que ya tienes descargados (o escribes el nombre
@@ -111,6 +123,7 @@ y se exporta a `.icns` (macOS) y `.ico` (Windows).
   - `«todos: describe tu estado»` → difusión a todos
   - `«nuevo agente claude»` / `«abre una terminal»` → invoca un agente
   - `«cierra a Ada»` → cierra ese agente
+  - `«organiza el lienzo»` / `«alinea en cuadrícula»` → ordena las tarjetas
 - **Temas** — Midnight, Carbon, Paper y Synthwave; el terminal cambia de paleta con el tema.
 
 ## Arquitectura
@@ -140,7 +153,8 @@ LIENZO abre terminales reales, así que el servidor está pensado para uso local
 - **Solo loopback** — se vincula a `127.0.0.1`, nunca a la red local. Para exponerlo
   a propósito, arranca con `HOST=0.0.0.0` (bajo tu responsabilidad).
 - **Handshake WebSocket validado** — se rechazan las conexiones cuyo `Host` u `Origin`
-  no sean `localhost`/`127.0.0.1`, lo que bloquea el *cross-site WebSocket hijacking*
+  no sean `localhost`/`127.0.0.1` (o, si arrancas con un `HOST` no-loopback, las
+  direcciones reales de tu máquina), lo que bloquea el *cross-site WebSocket hijacking*
   (una web maliciosa abriendo `ws://localhost:3000`) y el *DNS rebinding*.
 
 Usa las suscripciones de IA que ya tengas: cada CLI se autentica con su propia cuenta,

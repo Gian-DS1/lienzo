@@ -245,9 +245,16 @@ button { font-family: inherit; }
 .spawn-buttons {
   display: flex;
   gap: 5px;
+  /* En ventanas estrechas esta zona cede y hace scroll horizontal (sin barra),
+     para que Organizar/Guía/? nunca queden fuera de la pantalla. */
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.spawn-buttons::-webkit-scrollbar { display: none; }
 
 .spawn-btn {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -282,6 +289,7 @@ button { font-family: inherit; }
 }
 .broadcast input {
   width: 250px;
+  max-width: 34vw;
   border: 0.5px solid var(--hairline);
   background: color-mix(in srgb, var(--text) 5%, transparent);
   color: var(--text);
@@ -1202,6 +1210,95 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .mp-custom button:hover { filter: brightness(1.12); }
+
+/* Organizar el lienzo ------------------------------------------------------ */
+.arrange-pop {
+  position: fixed;
+  z-index: 1400;
+  width: 280px;
+  max-width: 92vw;
+  border-radius: 15px;
+  background: var(--glass-strong);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 0.5px solid var(--hairline);
+  box-shadow: inset 0 1px 0 var(--highlight), 0 18px 50px rgba(0, 0, 0, 0.42);
+  padding: 10px;
+  animation: chip-in 0.32s var(--ease-spring) both;
+}
+.ap-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 2px 3px 8px;
+}
+.ap-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 9px;
+}
+.ap-modes button {
+  padding: 7px 8px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border: 0.5px solid var(--hairline);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.ap-modes button:hover { background: color-mix(in srgb, var(--text) 12%, transparent); }
+.ap-modes button:active { transform: scale(0.95); }
+.ap-modes button.on {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+.ap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  padding: 5px 3px;
+}
+.ap-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+.ap-row select {
+  margin-left: auto;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: var(--text);
+  border: 0.5px solid var(--hairline);
+  border-radius: 7px;
+  font-size: 12px;
+  padding: 3px 6px;
+}
+.ap-val {
+  width: 40px;
+  text-align: right;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.ap-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text);
+  padding: 6px 3px 2px;
+  cursor: pointer;
+}
+.ap-check input { accent-color: var(--accent); }
+
+/* Movimiento suave de las tarjetas al organizarlas */
+.agent-card.arranging {
+  transition: left 0.45s var(--ease-out), top 0.45s var(--ease-out),
+              width 0.45s var(--ease-out), height 0.45s var(--ease-out),
+              box-shadow 0.35s var(--ease-out);
+}
 
 .hidden { display: none !important; }
 

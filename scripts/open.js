@@ -69,6 +69,14 @@ function startServer() {
   child.unref();
 }
 
+// Proceso desacoplado que ignora errores de arranque: un binario ausente
+// (p. ej. sin xdg-open) emitiría 'error' sin manejador y tumbaría el lanzador.
+function launchDetached(cmd, args, opts = {}) {
+  const child = spawn(cmd, args, { detached: true, stdio: 'ignore', ...opts });
+  child.on('error', () => {});
+  child.unref();
+}
+
 function firstFile(paths) {
   for (const p of paths) {
     try {
@@ -93,10 +101,10 @@ function openWindows() {
   ]);
   const app = chrome || edge;
   if (app) {
-    spawn(app, [`--app=${APP_URL}`, '--new-window'], { detached: true, stdio: 'ignore' }).unref();
+    launchDetached(app, [`--app=${APP_URL}`, '--new-window']);
   } else {
     // Navegador por defecto
-    spawn('cmd', ['/c', 'start', '""', APP_URL], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    launchDetached('cmd', ['/c', 'start', '""', APP_URL], { windowsHide: true });
   }
 }
 
@@ -106,9 +114,9 @@ function openMac() {
     try { return fs.statSync(`/Applications/${b}.app`).isDirectory(); } catch { return false; }
   });
   if (found) {
-    spawn('open', ['-na', found, '--args', `--app=${APP_URL}`], { detached: true, stdio: 'ignore' }).unref();
+    launchDetached('open', ['-na', found, '--args', `--app=${APP_URL}`]);
   } else {
-    execFile('open', [APP_URL]);
+    execFile('open', [APP_URL], () => { /* mejor esfuerzo */ });
   }
 }
 
@@ -122,9 +130,9 @@ function openLinux() {
   };
   const app = candidates.map(which).find(Boolean);
   if (app) {
-    spawn(app, [`--app=${APP_URL}`], { detached: true, stdio: 'ignore' }).unref();
+    launchDetached(app, [`--app=${APP_URL}`]);
   } else {
-    spawn('xdg-open', [APP_URL], { detached: true, stdio: 'ignore' }).unref();
+    launchDetached('xdg-open', [APP_URL]);
   }
 }
 

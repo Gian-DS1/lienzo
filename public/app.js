@@ -167,8 +167,15 @@ function shortenPath(p) {
 }
 
 async function loadAgentDefs() {
-  const res = await fetch('/api/agents');
-  const data = await res.json();
+  let data;
+  try {
+    const res = await fetch('/api/agents');
+    data = await res.json();
+  } catch {
+    // Servidor arrancando o reiniciándose: sin reintento la barra quedaría vacía.
+    setTimeout(loadAgentDefs, 1500);
+    return;
+  }
   agentDefs = data.agents;
   if (data.home) agentHome = data.home;
   const bar = document.getElementById('spawn-buttons');
@@ -382,10 +389,15 @@ function spawnAgent(type, opts = {}) {
     e.preventDefault();
     e.stopPropagation();
     const start = { x: e.clientX, y: e.clientY, w: card.offsetWidth, h: card.offsetHeight };
+    let fitQueued = false;
     const move = (ev) => {
       card.style.width = `${Math.max(340, start.w + (ev.clientX - start.x) / view.scale)}px`;
       card.style.height = `${Math.max(240, start.h + (ev.clientY - start.y) / view.scale)}px`;
-      fit.fit();
+      // fit() fuerza layout: como mucho una vez por frame, no por cada pointermove
+      if (!fitQueued) {
+        fitQueued = true;
+        requestAnimationFrame(() => { fitQueued = false; fit.fit(); });
+      }
     };
     const up = () => {
       window.removeEventListener('pointermove', move);
@@ -456,6 +468,169 @@ document.getElementById('broadcast-form').addEventListener('submit', (e) => {
 });
 
 // ---------------------------------------------------------------------------
+// Organizar tarjetas (cuadrícula / fila / columna / cascada)
+// ---------------------------------------------------------------------------
+
+const ARRANGE_KEY = 'lienzo-arrange';
+const ARRANGE_DEFAULTS = { mode: 'grid', gap: 24, cols: 0, sort: 'creation', uniform: true };
+let arrangePrefs = { ...ARRANGE_DEFAULTS };
+try {
+  arrangePrefs = { ...ARRANGE_DEFAULTS, ...JSON.parse(storageGet(ARRANGE_KEY) || '{}') };
+} catch { /* preferencias corruptas: usar las de fábrica */ }
+
+function saveArrangePrefs() {
+  storageSet(ARRANGE_KEY, JSON.stringify(arrangePrefs));
+}
+
+function sortedCards() {
+  const list = [...agents.values()];
+  if (arrangePrefs.sort === 'name') {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (arrangePrefs.sort === 'type') {
+    list.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+  }
+  return list; // 'creation': orden de llegada (inserción del Map)
+}
+
+// Coloca todas las tarjetas según el modo y encuadra la vista para verlas.
+let arrangeTimer = null;
+function arrangeCards(mode = arrangePrefs.mode) {
+  const list = sortedCards();
+  if (!list.length) { toast('No hay agentes que organizar'); return; }
+  arrangePrefs.mode = mode;
+  saveArrangePrefs();
+
+  const gap = arrangePrefs.gap;
+  // Celda: tamaño de fábrica si se igualan, o el máximo actual para no solapar.
+  const cellW = arrangePrefs.uniform ? 560 : Math.max(...list.map((a) => a.card.offsetWidth));
+  const cellH = arrangePrefs.uniform ? 380 : Math.max(...list.map((a) => a.card.offsetHeight));
+
+  let cols;
+  if (mode === 'row') cols = list.length;
+  else if (mode === 'column') cols = 1;
+  else cols = arrangePrefs.cols || Math.ceil(Math.sqrt(list.length));
+
+  list.forEach((agent, i) => {
+    const card = agent.card;
+    card.classList.add('arranging');
+    if (mode === 'cascade') {
+      card.style.left = `${i * 44}px`;
+      card.style.top = `${i * 44}px`;
+      card.style.zIndex = ++zTop;
+    } else {
+      card.style.left = `${(i % cols) * (cellW + gap)}px`;
+      card.style.top = `${Math.floor(i / cols) * (cellH + gap)}px`;
+    }
+    if (arrangePrefs.uniform) {
+      card.style.width = `${cellW}px`;
+      card.style.height = `${cellH}px`;
+    }
+  });
+
+  const rows = Math.ceil(list.length / cols);
+  const bw = mode === 'cascade' ? cellW + (list.length - 1) * 44 : cols * cellW + (cols - 1) * gap;
+  const bh = mode === 'cascade' ? cellH + (list.length - 1) * 44 : rows * cellH + (rows - 1) * gap;
+  fitViewTo(0, 0, bw, bh);
+
+  // Al asentarse la transición, reajustar los terminales al tamaño nuevo.
+  clearTimeout(arrangeTimer);
+  arrangeTimer = setTimeout(() => {
+    document.querySelectorAll('.agent-card.arranging').forEach((c) => c.classList.remove('arranging'));
+    for (const agent of list) agent.fit.fit();
+  }, 480);
+}
+
+// Centra la vista sobre un rectángulo del lienzo (coordenadas sin escalar).
+function fitViewTo(bx, by, bw, bh) {
+  const padX = 60, padTop = 90, padBottom = 60; // hueco para topbar y controles
+  const vw = viewport.clientWidth, vh = viewport.clientHeight;
+  const scale = Math.min(1, Math.max(0.25,
+    Math.min((vw - padX * 2) / bw, (vh - padTop - padBottom) / bh)));
+  const x = (vw - bw * scale) / 2 - bx * scale;
+  const y = padTop + (vh - padTop - padBottom - bh * scale) / 2 - by * scale;
+  glideView(x, y, scale);
+}
+
+// --- Popover de opciones ----------------------------------------------------
+const arrangeBtn = document.getElementById('arrange-btn');
+let arrangePop = null;
+
+function closeArrangePop() {
+  if (arrangePop) { arrangePop.remove(); arrangePop = null; }
+  document.removeEventListener('pointerdown', onArrangeOutside, true);
+}
+function onArrangeOutside(e) {
+  if (arrangePop && !arrangePop.contains(e.target) && e.target !== arrangeBtn) closeArrangePop();
+}
+function markArrangeMode(pop) {
+  pop.querySelectorAll('.ap-modes button').forEach((b) =>
+    b.classList.toggle('on', b.dataset.mode === arrangePrefs.mode));
+}
+
+function openArrangePop() {
+  const pop = document.createElement('div');
+  pop.className = 'arrange-pop';
+  pop.innerHTML = `
+    <div class="ap-head">Organizar el lienzo</div>
+    <div class="ap-modes">
+      <button type="button" data-mode="grid">⊞ Cuadrícula</button>
+      <button type="button" data-mode="row">▤ Fila</button>
+      <button type="button" data-mode="column">▥ Columna</button>
+      <button type="button" data-mode="cascade">⧉ Cascada</button>
+    </div>
+    <label class="ap-row">Separación
+      <input type="range" name="gap" min="12" max="64" step="4" value="${arrangePrefs.gap}" />
+      <span class="ap-val">${arrangePrefs.gap}px</span>
+    </label>
+    <label class="ap-row">Columnas
+      <select name="cols">
+        <option value="0">Auto</option>
+        ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n}</option>`).join('')}
+      </select>
+    </label>
+    <label class="ap-row">Ordenar por
+      <select name="sort">
+        <option value="creation">Llegada</option>
+        <option value="name">Nombre</option>
+        <option value="type">Agente</option>
+      </select>
+    </label>
+    <label class="ap-check">
+      <input type="checkbox" name="uniform" ${arrangePrefs.uniform ? 'checked' : ''} />
+      Igualar tamaños
+    </label>`;
+  document.body.appendChild(pop);
+  arrangePop = pop;
+
+  pop.querySelector('select[name="cols"]').value = String(arrangePrefs.cols);
+  pop.querySelector('select[name="sort"]').value = arrangePrefs.sort;
+  markArrangeMode(pop);
+
+  const r = arrangeBtn.getBoundingClientRect();
+  pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - 296))}px`;
+  pop.style.top = `${r.bottom + 8}px`;
+
+  pop.querySelectorAll('.ap-modes button').forEach((b) => {
+    b.onclick = () => { arrangeCards(b.dataset.mode); markArrangeMode(pop); };
+  });
+  pop.oninput = (e) => {
+    const t = e.target;
+    if (t.name === 'gap') {
+      arrangePrefs.gap = +t.value;
+      pop.querySelector('.ap-val').textContent = `${t.value}px`;
+    } else if (t.name === 'cols') arrangePrefs.cols = +t.value;
+    else if (t.name === 'sort') arrangePrefs.sort = t.value;
+    else if (t.name === 'uniform') arrangePrefs.uniform = t.checked;
+    saveArrangePrefs();
+    if (agents.size) arrangeCards(arrangePrefs.mode); // vista previa en vivo
+  };
+
+  document.addEventListener('pointerdown', onArrangeOutside, true);
+}
+
+arrangeBtn.onclick = () => (arrangePop ? closeArrangePop() : openArrangePop());
+
+// ---------------------------------------------------------------------------
 // Voice control
 // ---------------------------------------------------------------------------
 
@@ -499,6 +674,18 @@ function handleVoiceCommand(raw) {
       spawnAgent(def.type);
       return;
     }
+  }
+
+  // "organiza el lienzo" / "alinea en cuadrícula" / "acomoda en cascada"
+  // («ordena» queda reservado para la difusión: "ordena a todos que…")
+  if (/^(organiza|alinea|acomoda|arrange|tidy)\b/.test(norm)) {
+    const mode = /\b(fila|row)\b/.test(norm) ? 'row'
+      : /\b(columna|column)\b/.test(norm) ? 'column'
+      : /\b(cascada|cascade)\b/.test(norm) ? 'cascade'
+      : /\b(cuadricula|grid)\b/.test(norm) ? 'grid'
+      : arrangePrefs.mode;
+    arrangeCards(mode);
+    return;
   }
 
   // "cierra a marshall" / "close ada"
@@ -554,8 +741,13 @@ function setupRecognition() {
     voiceText.textContent = interim || 'Escuchando…';
   };
   rec.onend = () => {
-    if (listening) {
-      try { rec.start(); } catch { /* already restarting */ }
+    if (!listening) return;
+    // start() puede lanzar si la sesión anterior aún no ha soltado el micrófono;
+    // un único intento dejaría el modo voz muerto con el indicador encendido.
+    try { rec.start(); } catch {
+      setTimeout(() => {
+        if (listening) { try { rec.start(); } catch { /* sigue ocupado */ } }
+      }, 300);
     }
   };
   rec.onerror = (ev) => {
@@ -595,8 +787,17 @@ micBtn.onclick = () => (listening ? stopListening() : startListening());
 // Themes & misc
 // ---------------------------------------------------------------------------
 
+// localStorage puede lanzar (datos de sitio/cookies bloqueados en el navegador):
+// no debe tumbar el script entero.
+function storageGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function storageSet(key, value) {
+  try { localStorage.setItem(key, value); } catch { /* almacenamiento bloqueado */ }
+}
+
 const themeSelect = document.getElementById('theme-select');
-const savedTheme = localStorage.getItem('lienzo-theme');
+const savedTheme = storageGet('lienzo-theme');
 if (savedTheme && TERM_THEMES[savedTheme]) {
   document.body.dataset.theme = savedTheme;
   themeSelect.value = savedTheme;
@@ -604,7 +805,7 @@ if (savedTheme && TERM_THEMES[savedTheme]) {
 themeSelect.onchange = () => {
   const t = themeSelect.value;
   document.body.dataset.theme = t;
-  localStorage.setItem('lienzo-theme', t);
+  storageSet('lienzo-theme', t);
   for (const agent of agents.values()) {
     agent.term.options.theme = TERM_THEMES[t];
   }
@@ -619,9 +820,15 @@ function toast(text) {
   toastTimer = setTimeout(() => el.classList.add('hidden'), 2800);
 }
 
+let refitQueued = false;
 window.addEventListener('resize', () => {
-  for (const agent of agents.values()) agent.fit.fit();
+  if (refitQueued) return;
+  refitQueued = true;
+  requestAnimationFrame(() => {
+    refitQueued = false;
+    for (const agent of agents.values()) agent.fit.fit();
+  });
 });
 
 // API mínima para el tutorial interactivo
-window.LIENZO = { spawnAgent, closeAgent, agents, siriGlow, toast };
+window.LIENZO = { spawnAgent, closeAgent, arrangeCards, agents, siriGlow, toast };

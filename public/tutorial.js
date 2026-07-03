@@ -3,6 +3,9 @@
 
 (() => {
   const DONE_KEY = 'lienzo-tour-v1';
+  // localStorage puede lanzar (datos de sitio bloqueados): no debe romper el tour.
+  const storeGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const storeSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* bloqueado */ } };
 
   const STEPS = [
     {
@@ -107,7 +110,7 @@
     const step = STEPS[idx];
     if (step && step.onLeave) step.onLeave(api());
     active = false;
-    localStorage.setItem(DONE_KEY, '1');
+    storeSet(DONE_KEY, '1');
     ring.classList.add('leaving');
     card.classList.add('leaving');
     setTimeout(() => {
@@ -205,7 +208,7 @@
   document.getElementById('help-btn').addEventListener('click', start);
 
   // Primer arranque: espera a que la barra cargue y lanza el recorrido
-  if (!localStorage.getItem(DONE_KEY)) {
+  if (!storeGet(DONE_KEY)) {
     setTimeout(start, 700);
   }
 })();
