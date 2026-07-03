@@ -18,10 +18,10 @@
     {
       target: '#spawn-buttons',
       title: 'Invoca a tus agentes',
-      body: 'Cada botón lanza un agente real en su propia terminal: <b>Claude Code</b>, ' +
-        '<b>Codex</b> (GPT), <b>Gemini</b>, <b>Copilot</b>… Los atenuados no están ' +
-        'instalados en tu equipo; instálalos y aparecerán solos. La primera vez, cada ' +
-        'agente te pedirá iniciar sesión con tu propia cuenta dentro de su tarjeta.',
+      body: 'Cada botón lanza un agente real en su propia terminal: <b>Claude Code</b> ' +
+        'y <b>Codex</b> (GPT). Los atenuados no están instalados en tu equipo; ' +
+        'instálalos y aparecerán solos. La primera vez, cada agente te pedirá iniciar ' +
+        'sesión con tu propia cuenta dentro de su tarjeta.',
     },
     {
       target: '.spawn-btn[data-type="ollama"]',
@@ -60,7 +60,7 @@
       body: 'Pulsa el micrófono y habla:<br>' +
         '<code>«Marshall, corre los tests»</code><br>' +
         '<code>«todos: describan su estado»</code><br>' +
-        '<code>«nuevo agente gemini»</code> · <code>«cierra a Ada»</code>',
+        '<code>«nuevo agente codex»</code> · <code>«cierra a Ada»</code>',
       onEnter(api) { api.siriGlow.classList.add('on'); },
       onLeave(api) { api.siriGlow.classList.remove('on'); },
     },

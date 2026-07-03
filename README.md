@@ -1,8 +1,8 @@
 # LIENZO ◩
 
 **Comanda un ejército de agentes de IA en un solo lienzo.** Réplica funcional del sistema
-que vende [cnvs.dev](https://cnvs.dev/): Claude Code, Codex, Gemini, Copilot y **modelos
-locales** (Ollama) corriendo en paralelo sobre un canvas infinito, dirigidos con texto
+que vende [cnvs.dev](https://cnvs.dev/): Claude Code, Codex y **modelos locales**
+(Ollama) corriendo en paralelo sobre un canvas infinito, dirigidos con texto
 o con tu voz.
 
 Tú diriges, ellos construyen, tú publicas.
@@ -84,24 +84,18 @@ y se exporta a `.icns` (macOS) y `.ico` (Windows).
   |---|---|---|
   | Claude Code (Anthropic) | `claude` | `npm i -g @anthropic-ai/claude-code` |
   | Codex (OpenAI/GPT) | `codex` | `npm i -g @openai/codex` |
-  | Gemini (Google) | `gemini` | `npm i -g @google/gemini-cli` |
-  | Copilot (GitHub) | `copilot` | `npm i -g @github/copilot` |
   | **Ollama (modelos locales)** | `ollama` | [ollama.com/download](https://ollama.com/download) |
-  | Cursor | `cursor-agent` | `curl https://cursor.com/install -fsS \| bash` |
-  | Aider | `aider` | `pip install aider-install && aider-install` |
   | Shell / PowerShell | `$SHELL` / `powershell` | siempre disponible |
 
   Los que no estén instalados aparecen deshabilitados; instala uno y reinicia el
   servidor para activarlo. La primera vez, cada agente en la nube pide iniciar sesión
   con tu propia cuenta dentro de su tarjeta.
 
-  > 🔑 **Claves de API para agentes** — si un CLI necesita una variable de entorno,
-  > ponla en `~/.lienzo.env` (líneas `CLAVE=valor`); LIENZO se la pasa a todos los
-  > agentes aunque lo abras desde el Dock o un acceso directo, donde los `export`
-  > de tu shell no llegan. Ejemplo: Google retiró el login con cuenta individual
-  > de Gemini CLI (julio 2026), así que crea una API key gratis en
-  > [aistudio.google.com/apikey](https://aistudio.google.com/apikey), añade
-  > `GEMINI_API_KEY=tu_clave` a `~/.lienzo.env` y elige «Use Gemini API Key» en su tarjeta.
+  > 🔑 **Claves de API para agentes** — si prefieres autenticar con una clave en vez
+  > de iniciar sesión en el navegador, ponla en `~/.lienzo.env` (líneas `CLAVE=valor`,
+  > p. ej. `ANTHROPIC_API_KEY=…` para Claude u `OPENAI_API_KEY=…` para Codex); LIENZO
+  > se la pasa a todos los agentes aunque abras la app desde el Dock o un acceso
+  > directo, donde los `export` de tu shell no llegan.
 - **Modelos locales** 🖥️ — el botón **Ollama** (con distintivo `local`) corre modelos
   en tu propia máquina: **gratis, privados y sin conexión**. Al pulsarlo eliges qué
   modelo ejecutar de una lista de los que ya tienes descargados (o escribes el nombre
@@ -127,8 +121,8 @@ y se exporta a `.icns` (macOS) y `.ico` (Windows).
   recomendados), *Orquestar* (qué agente/modelo usar según la tarea, cómo gastar
   menos tokens en Claude Code, prompts que rinden y comandos por escenario),
   *Membresías* (cómo iniciar sesión y qué suscripción usa cada modelo en la nube:
-  Claude, Codex/GPT, Gemini, Copilot) y *Local* (cómo instalar Ollama y correr
-  modelos en tu propia máquina).
+  Claude y Codex/GPT) y *Local* (cómo instalar Ollama y correr modelos en tu
+  propia máquina).
 - **Nombres de tripulación** — los agentes se llaman Marshall, Chase, Ada, Grace, Linus…
   para poder dirigirte a ellos por voz.
 - **Difusión** — la barra superior envía una misma orden a todos los agentes vivos.

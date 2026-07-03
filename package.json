@@ -1,7 +1,7 @@
 {
   "name": "lienzo",
   "version": "1.0.0",
-  "description": "Canvas multi-agente: dirige Claude Code, Codex, Gemini, Copilot y modelos locales (Ollama) en paralelo con tu voz. App de escritorio para macOS, Windows y Linux.",
+  "description": "Canvas multi-agente: dirige Claude Code, Codex y modelos locales (Ollama) en paralelo con tu voz. App de escritorio para macOS, Windows y Linux.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -13,8 +13,6 @@
     "ai-agents",
     "claude-code",
     "codex",
-    "gemini",
-    "copilot",
     "ollama",
     "local-llm",
     "multi-agent",

@@ -53,7 +53,7 @@
   ];
 
   const COMBOS = [
-    { tag: 'Función nueva', text: 'Claude construye · Codex escribe los tests · Gemini revisa el diseño de la API.' },
+    { tag: 'Función nueva', text: 'Claude construye · Codex escribe los tests · un segundo Claude revisa el diseño en frío.' },
     { tag: 'Bug difícil', text: 'Pide la causa raíz a Claude y a Codex por separado; compara hipótesis y arregla con la que convenza.' },
     { tag: 'Refactor grande', text: 'Un agente por módulo, cada uno en su rama; un revisor final integra y corre la suite completa.' },
   ];
@@ -92,43 +92,6 @@
         'O una <b>API key de OpenAI</b> para facturación por uso.',
       ],
       install: 'npm i -g @openai/codex',
-    },
-    {
-      color: '#4285F4',
-      name: 'Gemini',
-      vendor: 'Google',
-      strength: 'Contexto enorme (millones de tokens) y multimodal.',
-      steps: [
-        '⚠ <b>«Sign in with Google»</b> para cuentas individuales fue <b>retirado por Google</b> ' +
-          '(julio 2026): da <i>«This client is no longer supported…»</i> y sugiere migrar a ' +
-          'Antigravity. Usa una <b>API key</b>: sigue funcionando y es gratis.',
-        'Consigue tu clave en <code>aistudio.google.com/apikey</code> con tu cuenta de Google.',
-        'Crea el archivo <code>~/.lienzo.env</code> con la línea <code>GEMINI_API_KEY=tu_clave</code> ' +
-          'y reinicia LIENZO (así la ven los agentes aunque abras LIENZO desde el Dock).',
-        'Pulsa <b>Gemini</b> y en el menú de acceso elige <b>«Use Gemini API Key»</b> y <kbd>Enter</kbd>. Listo.',
-      ],
-      plans: [
-        '<b>API key de AI Studio</b> (gratuita, nivel generoso) — la vía recomendada hoy.',
-        'Cuentas de pago <b>Code Assist Standard/Enterprise</b> o <b>Vertex AI</b> siguen soportando login corporativo.',
-      ],
-      install: 'npm i -g @google/gemini-cli',
-    },
-    {
-      color: '#8957E5',
-      name: 'Copilot',
-      vendor: 'GitHub',
-      strength: 'Integración con tu contexto de GitHub (issues, PRs, repos).',
-      steps: [
-        'Pulsa <b>Copilot</b>. Si no has entrado, escribe <code>/login</code> y <kbd>Enter</kbd>.',
-        'La tarjeta muestra un <b>código de dispositivo</b> (p. ej. <code>AB12-CD34</code>) y la URL <code>github.com/login/device</code>.',
-        'Abre esa URL, pega el código y autoriza con tu cuenta de <b>GitHub</b> (con suscripción Copilot activa).',
-        'Vuelve a la tarjeta: verás <i>«Signed in as tu-usuario»</i>. Listo.',
-      ],
-      plans: [
-        'Requiere una suscripción <b>GitHub Copilot</b> (Free, Pro, Business o Enterprise).',
-        'El plan Free da un número limitado de peticiones al mes.',
-      ],
-      install: 'npm i -g @github/copilot',
     },
   ];
 
@@ -171,11 +134,6 @@
     { tag: 'Código y tests, rápido',
       text: '<b>Codex</b> (GPT) — generación ágil y precisa; buen compañero para cubrir con ' +
         'pruebas lo que otro implementó.' },
-    { tag: 'Leer un repo entero de golpe',
-      text: '<b>Gemini</b> — contexto de millones de tokens y barato por token: ideal para ' +
-        '«entiende todo este proyecto y resúmelo».' },
-    { tag: 'Contexto de GitHub',
-      text: '<b>Copilot</b> — conectado a tus issues, PRs y repositorios.' },
     { tag: 'Repetitivo · privado · gratis',
       text: '<b>Ollama local</b> — sin costo ni conexión. Para código: <code>qwen2.5-coder</code> ' +
         'o <code>deepseek-coder-v2</code>.' },
@@ -220,7 +178,7 @@
     {
       icon: '◆',
       title: 'Descarga lo pesado a lo barato',
-      body: 'Usa Gemini o un modelo local para leer y resumir montañas de código; reserva el ' +
+      body: 'Usa un modelo local (Ollama) para leer y resumir montañas de código; reserva el ' +
         'modelo caro para decidir y escribir lo fino.',
     },
   ];

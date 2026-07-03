@@ -156,17 +156,15 @@ Ya está instalado. No necesitas volver a tocar PowerShell para usarlo.
 
 ## 5. Conectar tus modelos de IA
 
-Cada agente (Claude, Codex, Gemini, Copilot) usa **tu propia cuenta**. Los botones
-de la barra superior que aparezcan **atenuados** son CLIs que aún no tienes
-instalados. Para instalarlos, abre **PowerShell** y ejecuta la línea que
-corresponda (puedes instalar solo los que uses):
+Cada agente (Claude, Codex) usa **tu propia cuenta**. Los botones de la barra
+superior que aparezcan **atenuados** son CLIs que aún no tienes instalados. Para
+instalarlos, abre **PowerShell** y ejecuta la línea que corresponda (puedes
+instalar solo los que uses):
 
 | Agente | Comando (en PowerShell) |
 |---|---|
 | Claude Code (Anthropic) | `npm i -g @anthropic-ai/claude-code` |
 | Codex (OpenAI/GPT) | `npm i -g @openai/codex` |
-| Gemini (Google) | `npm i -g @google/gemini-cli` |
-| Copilot (GitHub) | `npm i -g @github/copilot` |
 
 Después de instalar uno, **cierra la ventana de LIENZO y vuelve a abrirla** (doble
 clic en el acceso directo): el botón del agente aparecerá activo.
@@ -175,35 +173,21 @@ Para saber **qué verás al iniciar sesión en cada uno** (pantallas, código de
 dispositivo, qué plan necesitas), abre LIENZO y pulsa **Guía → Membresías**: hay
 un paso a paso detallado de cada proveedor.
 
-### Claves de API (y el caso de Gemini)
+### Claves de API (opcional)
 
-Algunos agentes usan una **clave de API** en vez de (o además de) iniciar sesión
-en el navegador. En LIENZO se ponen en un archivo llamado **`.lienzo.env`** dentro
-de tu carpeta de usuario; LIENZO se las pasa a todos los agentes al arrancar.
+Si prefieres autenticar un agente con una **clave de API** en vez de iniciar sesión
+en el navegador, ponla en un archivo llamado **`.lienzo.env`** dentro de tu carpeta
+de usuario; LIENZO se la pasa a todos los agentes al arrancar. En **PowerShell**
+(pega tu clave entre las comillas):
 
-> ⚠️ **Gemini, importante (julio 2026):** Google **retiró el inicio de sesión con
-> cuenta individual** en Gemini CLI. Si eliges «Sign in with Google» verás el error
-> *«This client is no longer supported…»*. La vía que **sí funciona** es una clave
-> de API gratuita:
->
-> 1. Entra en **<https://aistudio.google.com/apikey>** con tu cuenta de Google y
->    pulsa **«Create API key»**. Copia la clave.
-> 2. Abre **PowerShell** y crea el archivo con tu clave (pega la tuya entre las
->    comillas):
->
->    ```powershell
->    Add-Content -Path "$HOME\.lienzo.env" -Value 'GEMINI_API_KEY=pega_tu_clave_aqui'
->    ```
->
->    > Se hace por PowerShell porque el Explorador de Windows no deja crear con
->    > facilidad archivos que empiezan por punto (`Add-Content` crea el archivo si
->    > no existe). Para **ver o editar** el archivo luego, o cambiar la clave:
->    > `notepad "$HOME\.lienzo.env"`.
-> 3. **Cierra y vuelve a abrir LIENZO.** En la tarjeta de Gemini elige la opción
->    **«2. Use Gemini API Key»** y pulsa Enter. Listo.
+```powershell
+Add-Content -Path "$HOME\.lienzo.env" -Value 'ANTHROPIC_API_KEY=pega_tu_clave_aqui'
+```
 
-El mismo archivo `.lienzo.env` admite otras variables (una por línea, formato
-`CLAVE=valor`) para cualquier agente que necesite una.
+> Se hace por PowerShell porque el Explorador de Windows no deja crear con facilidad
+> archivos que empiezan por punto (`Add-Content` crea el archivo si no existe). Para
+> **ver o editar** el archivo luego: `notepad "$HOME\.lienzo.env"`. Admite una
+> variable por línea (formato `CLAVE=valor`), p. ej. `OPENAI_API_KEY=…` para Codex.
 
 ---
 

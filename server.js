@@ -105,8 +105,8 @@ function spawnSpec(bin, extraArgs) {
 
 // PATH para los procesos de agentes. Cuando LIENZO se lanza desde el Finder o un
 // acceso directo, hereda un PATH mínimo sin el directorio de node; los CLIs de npm
-// (codex, gemini, copilot…) son scripts con shebang `#!/usr/bin/env node` y mueren
-// con «env: node: No such file or directory» (código 127). Anteponemos el directorio
+// (codex, etc.) son scripts con shebang `#!/usr/bin/env node` y mueren con
+// «env: node: No such file or directory» (código 127). Anteponemos el directorio
 // del node que ejecuta este servidor (y rutas comunes) al PATH heredado.
 let cachedAgentPath = null;
 function agentPath() {
@@ -123,9 +123,9 @@ function agentPath() {
   return cachedAgentPath;
 }
 
-// Claves de API para los agentes (p. ej. GEMINI_API_KEY): lanzado desde el
-// Dock/acceso directo, LIENZO no hereda los `export` del shell del usuario,
-// así que se leen de ~/.lienzo.env (líneas CLAVE=valor, # para comentarios).
+// Claves de API para los agentes (p. ej. ANTHROPIC_API_KEY, OPENAI_API_KEY):
+// lanzado desde el Dock/acceso directo, LIENZO no hereda los `export` del shell
+// del usuario, así que se leen de ~/.lienzo.env (líneas CLAVE=valor, # comenta).
 function userEnvFile() {
   const env = {};
   try {
@@ -210,34 +210,6 @@ const AGENT_DEFS = [
     label: 'Codex',
     color: '#10A37F',
     resolve: () => npmCli('codex'),
-    args: [],
-  },
-  {
-    type: 'gemini',
-    label: 'Gemini',
-    color: '#4285F4',
-    resolve: () => npmCli('gemini'),
-    args: [],
-  },
-  {
-    type: 'copilot',
-    label: 'Copilot',
-    color: '#8957E5',
-    resolve: () => npmCli('copilot'),
-    args: [],
-  },
-  {
-    type: 'cursor',
-    label: 'Cursor',
-    color: '#8B5CF6',
-    resolve: () => which('cursor-agent') || firstExisting([path.join(HOME, '.local', 'bin', 'cursor-agent')]),
-    args: [],
-  },
-  {
-    type: 'aider',
-    label: 'Aider',
-    color: '#22C55E',
-    resolve: () => npmCli('aider'),
     args: [],
   },
   {
