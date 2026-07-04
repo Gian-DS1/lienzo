@@ -138,7 +138,9 @@ function openWinNative() {
   }
   return new Promise((resolve) => {
     const icon = path.join(ROOT, 'assets', 'icon.ico');
-    const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+    // -Sta: WinForms necesita apartamento monohilo (powershell.exe 5.1 ya lo es
+    // por defecto, pero explícito evita un fallo si resolviera a un host MTA).
+    const args = ['-NoProfile', '-NonInteractive', '-Sta', '-ExecutionPolicy', 'Bypass',
       '-WindowStyle', 'Hidden', '-File', path.join(ROOT, 'scripts', 'webview-win.ps1'),
       '-Url', APP_URL];
     if (fs.existsSync(icon)) args.push('-Icon', icon);

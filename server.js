@@ -357,6 +357,10 @@ function verifyClient({ req }) {
 }
 
 const wss = new WebSocketServer({ server, path: '/ws', verifyClient });
+// ws reemite los errores del http server sobre el WebSocketServer; sin este
+// manejador, un EADDRINUSE (puerto ocupado) sería un «unhandled error» que
+// tumba el proceso con un stack trace en vez del aviso amable de más abajo.
+wss.on('error', handleServerError);
 
 wss.on('connection', (ws) => {
   const terms = new Map(); // id -> pty process
@@ -437,16 +441,22 @@ wss.on('connection', (ws) => {
   });
 });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
+// Manejador único de errores fatales del servidor (http y WebSocket). El guard
+// evita imprimir dos veces si ambos emiten el mismo error.
+let fatalHandled = false;
+function handleServerError(err) {
+  if (fatalHandled) return;
+  fatalHandled = true;
+  if (err && err.code === 'EADDRINUSE') {
     const hint = IS_WIN ? '$env:PORT=3001; npm start' : 'PORT=3001 npm start';
     console.error(`El puerto ${PORT} ya está en uso. ¿LIENZO ya está abierto? ` +
       `Ciérralo, o arranca con otro puerto:  ${hint}`);
   } else {
-    console.error('Error del servidor:', err.message);
+    console.error('Error del servidor:', (err && err.message) || err);
   }
   process.exit(1);
-});
+}
+server.on('error', handleServerError);
 
 server.listen(PORT, HOST, () => {
   console.log(`LIENZO listo en http://localhost:${PORT} (bind ${HOST})`);
