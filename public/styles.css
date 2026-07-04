@@ -149,12 +149,15 @@ button { font-family: inherit; }
   top: 42%;
   left: 50%;
   transform: translate(-50%, -50%);
+  width: min(90vw, 460px);
+  padding: 0 16px;
+  box-sizing: border-box;
   text-align: center;
   pointer-events: none;
   animation: hint-in 0.9s var(--ease-out) both;
 }
 #empty-hint .hint-mark {
-  font-size: 44px;
+  font-size: clamp(34px, 6vw, 44px);
   display: block;
   margin-bottom: 18px;
   background: linear-gradient(135deg, var(--glow-1), var(--glow-2), var(--glow-3));
@@ -164,13 +167,13 @@ button { font-family: inherit; }
   animation: hint-float 5s ease-in-out infinite;
 }
 #empty-hint h1 {
-  font-size: 30px;
+  font-size: clamp(21px, 4.4vw, 30px);
   font-weight: 700;
   letter-spacing: -0.4px;
   margin: 0 0 12px;
 }
 #empty-hint p {
-  font-size: 14px;
+  font-size: clamp(12.5px, 2.6vw, 14px);
   line-height: 1.7;
   margin: 0;
   color: var(--text-dim);
@@ -193,9 +196,18 @@ button { font-family: inherit; }
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: calc(100vw - 28px);
-  padding: 8px 12px;
+  /* La barra envuelve en varias filas y encoge sus piezas antes de desbordarse:
+     en ventanas estrechas nunca se corta un botón, siempre queda todo accesible. */
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(4px, 0.9vw, 8px);
+  row-gap: 6px;
+  /* max-content mide la fila única; max-width la recorta al ancho disponible.
+     Así se queda en una fila en monitores anchos y solo envuelve (usando todo
+     el ancho, sin colapsar a una columna) cuando de verdad no cabe. */
+  width: max-content;
+  max-width: calc(100vw - 20px);
+  padding: clamp(6px, 1vw, 8px) clamp(9px, 1.3vw, 12px);
   border-radius: 22px;
   background: var(--glass);
   backdrop-filter: blur(26px) saturate(180%);
@@ -246,7 +258,9 @@ button { font-family: inherit; }
   display: flex;
   gap: 5px;
   /* En ventanas estrechas esta zona cede y hace scroll horizontal (sin barra),
-     para que Organizar/Guía/? nunca queden fuera de la pantalla. */
+     para que Organizar/Guía/? nunca queden fuera de la pantalla. Al envolver a su
+     propia fila, crece para ocupar el ancho disponible. */
+  flex: 1 1 auto;
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
@@ -286,10 +300,12 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 .broadcast input {
-  width: 250px;
-  max-width: 34vw;
+  width: clamp(120px, 20vw, 210px);
+  max-width: 100%;
+  min-width: 0;
   border: 0.5px solid var(--hairline);
   background: color-mix(in srgb, var(--text) 5%, transparent);
   color: var(--text);
@@ -303,7 +319,7 @@ button { font-family: inherit; }
 .broadcast input:focus {
   border-color: color-mix(in srgb, var(--accent) 65%, transparent);
   box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--accent) 22%, transparent);
-  width: 300px;
+  width: clamp(140px, 22vw, 240px);
 }
 .broadcast button {
   border: none;
@@ -1409,6 +1425,48 @@ button { font-family: inherit; }
 .cwd-reset:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
 
 .hidden { display: none !important; }
+
+/* ======================================================= responsive =======
+   Todo el chrome fijo (barra, pistas, controles) se adapta al ancho de la
+   ventana. La barra ya envuelve y encoge sus piezas por sí sola (flex-wrap +
+   clamp); estos cortes van compactando lo que ocupa más espacio para que, al
+   achicar la ventana, nada quede fuera de la pantalla ni ilegible. */
+
+/* Ventanas medianas: quitar separadores (estorban al envolver) y apretar. */
+@media (max-width: 900px) {
+  #topbar { top: 10px; border-radius: 18px; }
+  .divider { display: none; }
+  .brand { padding: 0 2px; }
+  .cwd-pill { max-width: 150px; }
+  #cwd-label { max-width: 96px; }
+}
+
+/* Estrecho: ocultar el texto de la marca y dar al buscador su propia fila. */
+@media (max-width: 680px) {
+  .brand-name { display: none; }
+  #broadcast-form { flex: 1 1 100%; justify-content: center; order: 5; }
+  .broadcast input { flex: 1 1 auto; width: auto; max-width: none; }
+  .broadcast input:focus { width: auto; }
+  .pill-btn, .broadcast button, #theme-select { padding-top: 6px; padding-bottom: 6px; }
+}
+
+/* Muy estrecho (ventana tipo móvil): apilar, centrar y encoger controles. */
+@media (max-width: 460px) {
+  #topbar { top: 8px; gap: 5px; padding: 7px 9px; max-width: calc(100vw - 12px); }
+  .spawn-btn { padding: 6px 9px; font-size: 12px; }
+  .cwd-pill { max-width: 118px; }
+  #cwd-label { max-width: 64px; }
+  #zoom-controls { bottom: 12px; right: 12px; }
+  #zoom-controls button { min-width: 30px; height: 28px; }
+  #toast { max-width: calc(100vw - 24px); text-align: center; }
+}
+
+/* Ventanas muy bajas (poca altura): subir la pista y estrechar márgenes. */
+@media (max-height: 520px) {
+  #empty-hint { top: 50%; }
+  #empty-hint .hint-mark { margin-bottom: 10px; }
+  #zoom-controls { bottom: 10px; }
+}
 
 /* Reduce motion for accessibility ----------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
