@@ -12,7 +12,7 @@ const http = require('http');
 const net = require('net');
 const fs = require('fs');
 const os = require('os');
-const { spawn, execFile } = require('child_process');
+const { spawn, execFile, execFileSync } = require('child_process');
 
 const { buildMacApp } = require('./build-mac-app');
 
@@ -180,6 +180,31 @@ function openMacBrowsers(allowApp) {
   }
 }
 
+// ¿El Mac es Apple Silicon (arm64), aunque este node corra traducido por Rosetta?
+// Se cachea; process.arch ya basta si node es arm64, si no se consulta al sistema.
+let _arm64Hw = null;
+function isAppleSiliconHw() {
+  if (!IS_MAC) return false;
+  if (_arm64Hw !== null) return _arm64Hw;
+  if (process.arch === 'arm64') { _arm64Hw = true; return true; }
+  try {
+    _arm64Hw = execFileSync('sysctl', ['-n', 'hw.optional.arm64'], { encoding: 'utf8' }).trim() === '1';
+  } catch { _arm64Hw = false; }
+  return _arm64Hw;
+}
+
+// En Apple Silicon lanza SIEMPRE el slice nativo (arm64). Si LIENZO se abrió
+// desde un proceso x86_64 (p. ej. la terminal de un editor bajo Rosetta), el
+// applet universal heredaría x86_64: macOS mostraría el aviso de «app Intel» y
+// la ventana JXA fallaría con -2700. `arch -arm64` fuerza la arquitectura nativa;
+// en Mac Intel se lanza tal cual (no existe slice arm64 que forzar).
+function spawnMacWindow(cmd, args, childEnv) {
+  const opts = { detached: true, stdio: 'ignore', env: childEnv };
+  return isAppleSiliconHw()
+    ? spawn('arch', ['-arm64', cmd, ...args], opts)
+    : spawn(cmd, args, opts);
+}
+
 // Ventana nativa de macOS: app real compilada con osacompile (barra de menús y
 // Dock muestran «LIENZO»). La URL y el icono se pasan por entorno. Si osacompile
 // no está o falla, se usa la ventana de osascript; y si esa muriera al arrancar,
@@ -196,9 +221,8 @@ function openMac() {
   const exec = buildMacApp(false); // construye la .app si falta o cambió el script
   return new Promise((resolve) => {
     const child = exec
-      ? spawn(exec, [], { detached: true, stdio: 'ignore', env: childEnv })
-      : spawn('osascript', ['-l', 'JavaScript', path.join(ROOT, 'scripts', 'webview-mac.js')],
-          { detached: true, stdio: 'ignore', env: childEnv });
+      ? spawnMacWindow(exec, [], childEnv)
+      : spawnMacWindow('osascript', ['-l', 'JavaScript', path.join(ROOT, 'scripts', 'webview-mac.js')], childEnv);
     let settled = false;
     const settle = (fallback) => {
       if (settled) return;
