@@ -55,6 +55,12 @@ function buildMacApp(force) {
     execFileSync('osacompile', ['-l', 'JavaScript', '-o', APP, SRC], { stdio: 'ignore' });
     setPlist('CFBundleDisplayName', 'LIENZO');
     setPlist('CFBundleIdentifier', 'dev.lienzo.app');
+    // La plantilla del applet ya trae NSMicrophoneUsageDescription, pero NO la de
+    // reconocimiento de voz: si WebKit usa el reconocedor del sistema para
+    // webkitSpeechRecognition, sin esta clave macOS mataría la app en vez de pedir
+    // el permiso. Se añade para que la voz de la ventana nativa funcione.
+    setPlist('NSSpeechRecognitionUsageDescription',
+      "'LIENZO usa el reconocimiento de voz para tus órdenes por voz a los agentes.'");
     const icns = path.join(ROOT, 'assets', 'icon.icns');
     if (fs.existsSync(icns)) fs.copyFileSync(icns, ICNS_DST); // icono propio en el Dock
     return fs.existsSync(EXEC) ? EXEC : null;

@@ -83,6 +83,32 @@ function run(argv) {
   const conf = $.WKWebViewConfiguration.alloc.init;
   const web = $.WKWebView.alloc.initWithFrameConfiguration(win.contentView.bounds, conf);
   web.autoresizingMask = 2 | 16; // WidthSizable | HeightSizable
+
+  // Por defecto WKWebView RECHAZA toda petición de cámara/micrófono de la página
+  // (getUserMedia y el reconocimiento de voz webkitSpeechRecognition). Sin un
+  // WKUIDelegate que conteste, la respuesta es «denegado» al instante y macOS ni
+  // siquiera muestra el diálogo de permiso: por eso la voz no funcionaba en la
+  // ventana nativa. Concediendo la captura, el sistema pide el permiso REAL del
+  // micrófono (el Info.plist ya trae NSMicrophoneUsageDescription) y la voz va
+  // igual que en Chrome. Se usa respondsToSelector:, así que no declaramos el
+  // protocolo (misma razón que LienzoDelegate). Firma: void, con NSInteger ('q')
+  // para WKMediaCaptureType y un bloque ('@?') como decisionHandler.
+  ObjC.registerSubclass({
+    name: 'LienzoUIDelegate',
+    methods: {
+      'webView:requestMediaCapturePermissionForOrigin:initiatedByFrame:type:decisionHandler:': {
+        types: ['v', ['@', '@', '@', 'q', '@?']],
+        implementation: (_web, _origin, _frame, _type, decisionHandler) => {
+          decisionHandler(1); // WKPermissionDecisionGrant
+        },
+      },
+    },
+  });
+  // WKWebView.UIDelegate es una referencia DÉBIL: hay que guardar el delegado en
+  // una variable viva o el recolector lo liberaría y volvería el «denegado».
+  const uiDelegate = $.LienzoUIDelegate.alloc.init;
+  web.setUIDelegate(uiDelegate);
+
   web.loadRequest($.NSURLRequest.requestWithURL($.NSURL.URLWithString(url)));
   win.contentView.addSubview(web);
 

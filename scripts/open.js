@@ -211,7 +211,9 @@ function spawnMacWindow(cmd, args, childEnv) {
 // spawn directo no puede robar el foco y quedaría abierta detrás. `--env` le pasa
 // la URL y el icono; `--arch arm64` fuerza el slice nativo en Apple Silicon (evita
 // Rosetta y el aviso «app Intel»). Si osacompile no está, se cae a la ventana de
-// osascript; y si nada de eso arranca, a los navegadores. Nota: la voz solo va en Chrome.
+// osascript; y si nada de eso arranca, a los navegadores. La voz por micrófono
+// funciona también en la ventana nativa (WKWebView concede la captura, ver
+// scripts/webview-mac.js).
 function openMac() {
   const mode = process.env.LIENZO_WINDOW || userEnvVars().LIENZO_WINDOW || 'native';
   if (mode === 'chrome') return openMacBrowsers(true);
