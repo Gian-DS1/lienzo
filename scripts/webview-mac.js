@@ -26,10 +26,13 @@ function run(argv) {
   app.setActivationPolicy(0); // 0 = NSApplicationActivationPolicyRegular (Dock + foco)
 
   // Cerrar la ventana debe terminar el proceso; si no, osascript seguiría
-  // vivo e invisible para siempre.
+  // vivo e invisible para siempre. AppKit llama a este método opcional por
+  // `respondsToSelector:`, así que NO declaramos `protocols: ['NSApplicationDelegate']`:
+  // hacerlo obliga a JXA a comparar la firma de tipos contra el protocolo, y bajo
+  // Rosetta/x86_64 BOOL se codifica 'c' (no 'B'), lo que revienta con
+  // «method types do not match the protocol method types (-2700)».
   ObjC.registerSubclass({
     name: 'LienzoDelegate',
-    protocols: ['NSApplicationDelegate'],
     methods: {
       'applicationShouldTerminateAfterLastWindowClosed:': {
         types: ['B', ['@']],
