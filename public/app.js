@@ -178,6 +178,7 @@ async function loadAgentDefs() {
   }
   agentDefs = data.agents;
   if (data.home) agentHome = data.home;
+  updateCwdLabel(); // ahora que hay home, refrescar el «~» de la carpeta
   const bar = document.getElementById('spawn-buttons');
   bar.innerHTML = '';
   for (const def of agentDefs) {
@@ -201,6 +202,123 @@ async function loadAgentDefs() {
   }
 }
 loadAgentDefs();
+
+// ---------------------------------------------------------------------------
+// Carpeta de trabajo de los agentes (dónde se abren, qué carpeta «confían»)
+// ---------------------------------------------------------------------------
+const cwdBtn = document.getElementById('cwd-btn');
+const cwdLabel = document.getElementById('cwd-label');
+let workDir = storageGet('lienzo-workdir') || ''; // '' = carpeta de inicio (~) del servidor
+let cwdPop = null;
+
+function updateCwdLabel() {
+  const shown = workDir ? shortenPath(workDir) : '~';
+  cwdLabel.textContent = shown.length > 26 ? '…' + shown.slice(-25) : shown;
+  cwdBtn.title = workDir
+    ? `Carpeta de trabajo de los agentes: ${workDir}`
+    : 'Carpeta de trabajo: la de inicio (~). Haz clic para elegir otra.';
+}
+
+// Valida (y expande «~») una ruta contra el servidor y la fija como carpeta de
+// trabajo. dir vacío = volver a la carpeta de inicio. Devuelve si tuvo éxito.
+async function setWorkDir(dir) {
+  if (!dir) {
+    workDir = '';
+    storageSet('lienzo-workdir', '');
+    updateCwdLabel();
+    return true;
+  }
+  try {
+    const res = await fetch(`/api/validate-dir?path=${encodeURIComponent(dir)}`);
+    const data = await res.json();
+    if (data.ok) {
+      workDir = data.path;
+      storageSet('lienzo-workdir', workDir);
+      updateCwdLabel();
+      return true;
+    }
+  } catch { /* red: tratar como inválida */ }
+  toast('Esa carpeta no existe o no es válida');
+  return false;
+}
+
+// Revalidar la carpeta guardada al cargar (pudo borrarse o moverse).
+if (workDir) {
+  fetch(`/api/validate-dir?path=${encodeURIComponent(workDir)}`)
+    .then((r) => r.json())
+    .then((d) => { if (!d.ok) { workDir = ''; storageSet('lienzo-workdir', ''); } updateCwdLabel(); })
+    .catch(() => {});
+}
+updateCwdLabel();
+
+function closeCwdPop() {
+  if (cwdPop) { cwdPop.remove(); cwdPop = null; }
+  document.removeEventListener('pointerdown', onCwdOutside, true);
+}
+function onCwdOutside(e) {
+  if (cwdPop && !cwdPop.contains(e.target) && !cwdBtn.contains(e.target)) closeCwdPop();
+}
+
+function openCwdPop() {
+  const pop = document.createElement('div');
+  pop.className = 'cwd-pop';
+  pop.innerHTML = `
+    <div class="cwd-head">Carpeta de trabajo</div>
+    <p class="cwd-note">Los agentes nuevos se abrirán aquí; será la carpeta que te pidan «confiar».</p>
+    <button type="button" class="cwd-browse">📂 Elegir carpeta…</button>
+    <form class="cwd-form">
+      <input type="text" placeholder="~/proyectos/mi-app" autocomplete="off" spellcheck="false" />
+      <button type="submit" title="Usar esta ruta">Usar</button>
+    </form>
+    <button type="button" class="cwd-reset">↺ Carpeta de inicio (~)</button>`;
+  document.body.appendChild(pop);
+  cwdPop = pop;
+
+  const r = cwdBtn.getBoundingClientRect();
+  pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - 324))}px`;
+  pop.style.top = `${r.bottom + 8}px`;
+
+  const input = pop.querySelector('.cwd-form input');
+  input.value = workDir || '';
+  const browse = pop.querySelector('.cwd-browse');
+
+  pop.querySelector('.cwd-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const v = input.value.trim();
+    if (await setWorkDir(v)) { closeCwdPop(); toast(v ? 'Carpeta de trabajo actualizada' : 'Carpeta de inicio (~)'); }
+  };
+  browse.onclick = async () => {
+    browse.textContent = 'Abriendo el explorador…';
+    browse.disabled = true;
+    try {
+      const res = await fetch(`/api/pick-folder?start=${encodeURIComponent(workDir || '')}`);
+      const data = await res.json();
+      if (data.path) { await setWorkDir(data.path); closeCwdPop(); toast('Carpeta de trabajo actualizada'); return; }
+      // Cancelado o sin diálogo nativo: dejar que escriba la ruta.
+      browse.textContent = '📂 Elegir carpeta…';
+      browse.disabled = false;
+      input.focus();
+    } catch {
+      browse.textContent = '📂 Elegir carpeta…';
+      browse.disabled = false;
+      toast('No se pudo abrir el explorador; escribe la ruta.');
+    }
+  };
+  pop.querySelector('.cwd-reset').onclick = async () => {
+    await setWorkDir('');
+    closeCwdPop();
+    toast('Carpeta de inicio (~)');
+  };
+
+  // Registrar el cierre-al-clic-fuera en el próximo tick: así el propio clic que
+  // abre el popover no lo cierra de inmediato.
+  setTimeout(() => {
+    if (cwdPop === pop) document.addEventListener('pointerdown', onCwdOutside, true);
+    input.focus();
+  }, 0);
+}
+
+cwdBtn.onclick = () => (cwdPop ? closeCwdPop() : openCwdPop());
 
 // Modelos locales instalados para un tipo de agente. Se consulta cada vez que se
 // abre el selector (el servidor cachea 3 s) para que un modelo recién descargado
@@ -353,7 +471,7 @@ function spawnAgent(type, opts = {}) {
   agents.set(id, agent);
   emptyHint.classList.add('hidden');
 
-  wsSend({ type: 'spawn', id, agent: type, model, cols: term.cols, rows: term.rows, cwd: null });
+  wsSend({ type: 'spawn', id, agent: type, model, cols: term.cols, rows: term.rows, cwd: workDir || null });
 
   // Focus / raise
   card.addEventListener('pointerdown', () => {

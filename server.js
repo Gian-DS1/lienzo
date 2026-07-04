@@ -277,6 +277,67 @@ app.get('/api/models', async (req, res) => {
   res.json({ models: def ? await def.listModels() : [] });
 });
 
+// Expande «~» al home y comprueba que la ruta es una carpeta existente. Se usa
+// para validar la carpeta de trabajo que el usuario escribe.
+function resolveDir(p) {
+  let s = typeof p === 'string' ? p.trim() : '';
+  if (s === '~') s = HOME;
+  else if (s.startsWith('~/') || s.startsWith('~\\')) s = path.join(HOME, s.slice(2));
+  try {
+    if (s && fs.statSync(s).isDirectory()) return path.resolve(s);
+  } catch { /* no existe o no es carpeta */ }
+  return null;
+}
+
+app.get('/api/validate-dir', (req, res) => {
+  const dir = resolveDir(req.query.path);
+  res.json(dir ? { ok: true, path: dir } : { ok: false });
+});
+
+// Diálogo nativo del sistema para elegir carpeta. El prompt es fijo (sin entrada
+// del usuario), así que no hay riesgo de inyección. Devuelve la ruta o null
+// (cancelado / sin herramienta de diálogo disponible, p. ej. Linux sin zenity).
+function pickFolder(startDir) {
+  return new Promise((resolve) => {
+    const start = resolveDir(startDir) || HOME;
+    let cmd, args;
+    if (process.platform === 'darwin') {
+      const loc = start.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      cmd = 'osascript';
+      args = ['-e', 'activate', '-e',
+        `set d to POSIX file "${loc}"`, '-e',
+        'POSIX path of (choose folder with prompt "Elige la carpeta de trabajo para los agentes" default location d)'];
+    } else if (IS_WIN) {
+      const sel = start.replace(/'/g, "''");
+      const ps = 'Add-Type -AssemblyName System.Windows.Forms; '
+        + '$d = New-Object System.Windows.Forms.FolderBrowserDialog; '
+        + "$d.Description = 'Elige la carpeta de trabajo para los agentes'; "
+        + `$d.SelectedPath = '${sel}'; `
+        + 'if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Out.Write($d.SelectedPath) }';
+      cmd = 'powershell';
+      args = ['-NoProfile', '-STA', '-Command', ps];
+    } else if (which('zenity')) {
+      cmd = 'zenity';
+      args = ['--file-selection', '--directory', '--title=Elige la carpeta de trabajo', `--filename=${start}/`];
+    } else if (which('kdialog')) {
+      cmd = 'kdialog';
+      args = ['--getexistingdirectory', start];
+    } else {
+      return resolve(null); // sin diálogo nativo: el cliente cae al campo de texto
+    }
+    execFile(cmd, args, { timeout: 120000 }, (err, stdout) => {
+      let p = String(stdout || '').trim();
+      if (p.length > 1) p = p.replace(/[/\\]$/, ''); // quitar barra final (no en la raíz)
+      resolve(resolveDir(p));
+    });
+  });
+}
+
+app.get('/api/pick-folder', async (req, res) => {
+  try { res.json({ path: await pickFolder(req.query.start) }); }
+  catch { res.json({ path: null }); }
+});
+
 const server = http.createServer(app);
 
 // ---------------------------------------------------------------------------

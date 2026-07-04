@@ -1313,6 +1313,101 @@ button { font-family: inherit; }
               box-shadow 0.35s var(--ease-out);
 }
 
+/* Carpeta de trabajo -------------------------------------------------------- */
+.cwd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 210px;
+  min-width: 0;
+  flex: none;
+}
+.cwd-pill .cwd-ico { font-size: 12px; line-height: 1; }
+#cwd-label {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.cwd-pop {
+  position: fixed;
+  z-index: 1400;
+  width: 316px;
+  max-width: 92vw;
+  border-radius: 15px;
+  background: var(--glass-strong);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 0.5px solid var(--hairline);
+  box-shadow: inset 0 1px 0 var(--highlight), 0 18px 50px rgba(0, 0, 0, 0.42);
+  padding: 10px;
+  animation: chip-in 0.32s var(--ease-spring) both;
+}
+.cwd-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 2px 3px 6px;
+}
+.cwd-note { font-size: 11.5px; line-height: 1.5; color: var(--text-dim); margin: 0 3px 9px; }
+.cwd-browse {
+  width: 100%;
+  padding: 8px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  border: 0.5px solid var(--hairline);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.cwd-browse:hover { background: color-mix(in srgb, var(--text) 13%, transparent); }
+.cwd-browse:active { transform: scale(0.98); }
+.cwd-browse:disabled { opacity: 0.6; cursor: default; }
+.cwd-form { display: flex; gap: 5px; margin-top: 8px; }
+.cwd-form input {
+  flex: 1;
+  min-width: 0;
+  border: 0.5px solid var(--hairline);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 7px 10px;
+  font-size: 12px;
+  outline: none;
+  font-family: "SF Mono", ui-monospace, Menlo, monospace;
+}
+.cwd-form input:focus { border-color: color-mix(in srgb, var(--accent) 65%, transparent); }
+.cwd-form button {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 9px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.cwd-form button:hover { filter: brightness(1.12); }
+.cwd-reset {
+  width: 100%;
+  margin-top: 7px;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.cwd-reset:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+
 .hidden { display: none !important; }
 
 /* Reduce motion for accessibility ----------------------------------------- */
