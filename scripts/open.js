@@ -14,7 +14,7 @@ const fs = require('fs');
 const os = require('os');
 const { spawn, execFile, execFileSync } = require('child_process');
 
-const { buildMacApp } = require('./build-mac-app');
+const { buildMacApp, APP } = require('./build-mac-app');
 
 const ROOT = path.resolve(__dirname, '..');
 const PORT = process.env.PORT || 3000;
@@ -206,23 +206,34 @@ function spawnMacWindow(cmd, args, childEnv) {
 }
 
 // Ventana nativa de macOS: app real compilada con osacompile (barra de menús y
-// Dock muestran «LIENZO»). La URL y el icono se pasan por entorno. Si osacompile
-// no está o falla, se usa la ventana de osascript; y si esa muriera al arrancar,
-// se cae a los navegadores. Nota: el control por voz solo existe en Chrome.
+// Dock muestran «LIENZO»). Se abre con `open` (LaunchServices), que es la única
+// forma de que la ventana llegue al frente: en macOS moderno una app lanzada por
+// spawn directo no puede robar el foco y quedaría abierta detrás. `--env` le pasa
+// la URL y el icono; `--arch arm64` fuerza el slice nativo en Apple Silicon (evita
+// Rosetta y el aviso «app Intel»). Si osacompile no está, se cae a la ventana de
+// osascript; y si nada de eso arranca, a los navegadores. Nota: la voz solo va en Chrome.
 function openMac() {
   const mode = process.env.LIENZO_WINDOW || userEnvVars().LIENZO_WINDOW || 'native';
   if (mode === 'chrome') return openMacBrowsers(true);
   if (mode === 'browser') return openMacBrowsers(false);
 
   const icon = path.join(ROOT, 'assets', 'icon-1024.png');
-  const childEnv = { ...process.env, LIENZO_URL: APP_URL };
-  if (fs.existsSync(icon)) childEnv.LIENZO_ICON = icon;
-
   const exec = buildMacApp(false); // construye la .app si falta o cambió el script
   return new Promise((resolve) => {
-    const child = exec
-      ? spawnMacWindow(exec, [], childEnv)
-      : spawnMacWindow('osascript', ['-l', 'JavaScript', path.join(ROOT, 'scripts', 'webview-mac.js')], childEnv);
+    let child;
+    if (exec) {
+      // `open` sale en cuanto lanza la app (código 0 = ok; ≠0 = no se pudo → navegador).
+      const args = ['--env', `LIENZO_URL=${APP_URL}`];
+      if (fs.existsSync(icon)) args.push('--env', `LIENZO_ICON=${icon}`);
+      if (isAppleSiliconHw()) args.push('--arch', 'arm64');
+      args.push(APP);
+      child = spawn('open', args, { detached: true, stdio: 'ignore' });
+    } else {
+      // Sin osacompile: ventana de osascript por spawn (con arquitectura nativa).
+      const childEnv = { ...process.env, LIENZO_URL: APP_URL };
+      if (fs.existsSync(icon)) childEnv.LIENZO_ICON = icon;
+      child = spawnMacWindow('osascript', ['-l', 'JavaScript', path.join(ROOT, 'scripts', 'webview-mac.js')], childEnv);
+    }
     let settled = false;
     const settle = (fallback) => {
       if (settled) return;
