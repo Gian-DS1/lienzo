@@ -540,6 +540,10 @@ button { font-family: inherit; }
   overflow: hidden;
 }
 .agent-term .xterm { height: 100%; }
+/* El tema del terminal usa fondo transparente (#00000000) para dejar ver el
+   cristal de la tarjeta, pero xterm pinta el viewport con ese color sin alfa
+   (negro opaco): en temas claros como Paper el texto quedaba negro sobre negro. */
+.agent-term .xterm-viewport { background-color: transparent !important; }
 
 .resize-handle {
   position: absolute;
