@@ -1,11 +1,17 @@
 # LIENZO ◩
 
-**Comanda un ejército de agentes de IA en un solo lienzo.** Réplica funcional del sistema
-que vende [cnvs.dev](https://cnvs.dev/): Claude Code, Codex y **modelos locales**
-(Ollama) corriendo en paralelo sobre un canvas infinito, dirigidos con texto
-o con tu voz.
+**Comanda un ejército de agentes de IA en un solo lienzo.** Claude Code, Codex y
+**modelos locales** (Ollama) corriendo en paralelo sobre un canvas infinito,
+dirigidos con texto o con tu voz.
 
 Tú diriges, ellos construyen, tú publicas.
+
+Implementación propia y de código abierto de una idea que ronda el aire —
+dirigir varios agentes a la vez sobre un lienzo espacial en lugar de una sola
+conversación lineal; [cnvs.dev](https://cnvs.dev/) es la versión comercial más
+conocida. LIENZO no comparte código con ella y se separa en algo deliberado:
+**corre entero en tu máquina**, incluidos los modelos, así que un canvas con
+Ollama funciona sin cuenta, sin nube y sin que tu código salga del equipo.
 
 Funciona en **macOS, Windows y Linux**. Solo necesitas [Node.js 18+](https://nodejs.org).
 
