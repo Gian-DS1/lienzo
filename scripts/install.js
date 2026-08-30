@@ -121,8 +121,11 @@ $s.Save()`;
     return lnk;
   };
 
-  try { mkShortcut(desktop); log(`✓ Acceso directo en el Escritorio`); } catch (e) { log('· No se pudo crear el acceso del Escritorio: ' + e.message); }
-  try { mkShortcut(startMenu); log(`✓ Acceso directo en el menú Inicio`); } catch (e) { log('· No se pudo crear el acceso del menú Inicio: ' + e.message); }
+  let creados = 0;
+  try { mkShortcut(desktop); creados++; log(`✓ Acceso directo en el Escritorio`); } catch (e) { log('· No se pudo crear el acceso del Escritorio: ' + e.message); }
+  try { mkShortcut(startMenu); creados++; log(`✓ Acceso directo en el menú Inicio`); } catch (e) { log('· No se pudo crear el acceso del menú Inicio: ' + e.message); }
+  // Uno solo basta (una política de empresa puede bloquear el otro), ninguno no.
+  if (creados === 0) throw new Error('no se pudo crear ningún acceso directo');
   log(`  Lanzador: ${vbs}`);
 
   // DLLs del SDK de WebView2 para la ventana nativa (dependencia descargada,
@@ -157,8 +160,10 @@ Categories=Development;Utility;
   log('  Búscalo como «LIENZO» en tu menú de aplicaciones.');
 }
 
-// Nunca fallar: no poder crear el acceso directo no invalida la instalación —
-// LIENZO sigue arrancando con `npm start`. Se avisa y se termina con éxito.
+// `npm run setup` se pide a propósito y su único cometido es el acceso directo:
+// si no lo consigue, tiene que decirlo con un código de salida distinto de cero.
+// Los extras opcionales (ventana nativa, SDK de WebView2) se avisan con «·» más
+// arriba y no cuentan como fallo: LIENZO abre igual.
 try {
   log('Instalando el acceso directo de LIENZO…');
   log(`  Repo: ${ROOT}`);
@@ -168,7 +173,8 @@ try {
   else installLinux();
   log('Listo. Abre LIENZO como cualquier otra app.');
 } catch (e) {
-  log('· No se pudo crear el acceso directo automáticamente: ' + (e && e.message));
-  log('  Puedes reintentarlo luego con:  npm run setup');
+  process.stderr.write('✗ No se pudo crear el acceso directo: ' + (e && e.message) + '\n');
+  process.stderr.write('  LIENZO sigue arrancando desde la terminal con:  npm start\n');
+  process.exit(1);
 }
 process.exit(0);
