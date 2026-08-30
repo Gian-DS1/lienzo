@@ -98,13 +98,14 @@ PowerShell.**
 
    ```powershell
    npm install
+   npm run setup
    ```
 
-   Verás muchas líneas de texto durante 1–2 minutos. Es normal. Al terminar,
-   LIENZO **crea automáticamente** un acceso directo llamado **LIENZO** en tu
-   **Escritorio** y en el **menú Inicio**, y descarga el pequeño componente que
-   le da su **ventana propia** (el SDK de WebView2, ~5 MB). Verás al final algo
-   como:
+   Verás muchas líneas de texto durante 1–2 minutos. Es normal. El primer
+   comando solo baja las dependencias; el segundo crea un acceso directo
+   llamado **LIENZO** en tu **Escritorio** y en el **menú Inicio**, y descarga
+   el pequeño componente que le da su **ventana propia** (el SDK de WebView2,
+   ~5 MB). Verás al final algo como:
 
    ```
    ✓ Acceso directo en el Escritorio
@@ -112,7 +113,7 @@ PowerShell.**
    ✓ SDK WebView2 listo en C:\Users\TU-USUARIO\lienzo\webview2
    ```
 
-   > ¿No aparecieron los accesos directos? Ejecuta manualmente:
+   > ¿No aparecieron los accesos directos? Vuelve a ejecutar:
    > ```powershell
    > npm run setup
    > ```

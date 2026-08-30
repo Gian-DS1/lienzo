@@ -101,10 +101,11 @@ Con [Node.js 18+](https://nodejs.org), en una terminal (macOS/Linux) o en **Powe
 ```bash
 git clone https://github.com/Gian-DS1/lienzo.git
 cd lienzo
-npm install        # instala dependencias y crea el acceso directo automáticamente
+npm install        # solo dependencias, no toca tu sistema
+npm run setup      # crea el acceso directo nativo
 ```
 
-`npm install` ejecuta `npm run setup`, que crea un **acceso directo nativo** apuntando a
+`npm run setup` crea un **acceso directo nativo** apuntando a
 este repo y a tu instalación de Node (sin rutas fijas):
 
 | Sistema | Qué crea | Cómo abrirlo |
@@ -253,7 +254,7 @@ Los problemas que hicieron interesante el proyecto, y cómo se resolvieron:
   entero por unos cientos de KB de código no compensa. Cada sistema aporta su webview:
   `osacompile`
   genera una `.app` real en macOS, PowerShell levanta WinForms + WebView2 en Windows, y
-  Linux cae al modo `--app`. Instalar sigue siendo `npm install`.
+  Linux cae al modo `--app`. Instalar sigue siendo `npm install` + `npm run setup`.
 - **Detectar CLIs cuando no hay PATH.** Una app lanzada desde el Dock o un acceso directo
   hereda un entorno mínimo, así que `which` no basta: se prueban primero las rutas
   típicas de npm global por plataforma (`%APPDATA%\npm`, junto a `node`, `/usr/local/bin`)

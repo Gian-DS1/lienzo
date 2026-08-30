@@ -6,8 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "open": "node scripts/open.js",
-    "setup": "node scripts/install.js",
-    "postinstall": "node scripts/install.js"
+    "setup": "node scripts/install.js"
   },
   "keywords": [
     "ai-agents",

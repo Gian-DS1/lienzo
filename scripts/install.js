@@ -157,8 +157,8 @@ Categories=Development;Utility;
   log('  Búscalo como «LIENZO» en tu menú de aplicaciones.');
 }
 
-// Nunca fallar: este script corre como `postinstall`, así que un error creando el
-// acceso directo no debe romper `npm install`. Se avisa y se termina con éxito.
+// Nunca fallar: no poder crear el acceso directo no invalida la instalación —
+// LIENZO sigue arrancando con `npm start`. Se avisa y se termina con éxito.
 try {
   log('Instalando el acceso directo de LIENZO…');
   log(`  Repo: ${ROOT}`);
